@@ -62,6 +62,7 @@ in [`docs/openipc.md`](docs/openipc.md).
 
 - [`docs/stock-streaming.md`](docs/stock-streaming.md) — ports, RTSP/ONVIF endpoints, observed streams
 - [`docs/firmware.md`](docs/firmware.md) — current version, official update file, update methods, hack status
+- [`docs/telnet.md`](docs/telnet.md) — telnet attempt result and how to keep a shell across firmware upgrades
 - [`docs/openipc.md`](docs/openipc.md) — what OpenIPC supports on XM535D1 and why it has no video
 - [`docs/security.md`](docs/security.md) — default credentials, hardening
 - [`docs/backup.md`](docs/backup.md) — full flash dump / recovery notes if you ever modify it
