@@ -56,6 +56,52 @@ remained healthy (80/554/8899/34567 up).
 **Conclusion:** on this 2024 firmware the unsigned `InstallDesc` + `Shell` path is closed (the post-2020
 Xiongmai hardening). The method that worked on 2020-era XM boards does not apply here.
 
+## What the official firmware reveals
+
+Extracting the vendor image (`user-x` SquashFS + `romfs-x` CramFS) shows exactly how telnet is gated:
+
+**`bin/Sofia`** (the application):
+
+- `VerifyMx8QSign`, `UpMx8Q`, `Mx8Q` — the upgrade package signature check that rejected the fake
+  `InstallDesc`.
+- `VerifyMx8QSign, no pub, skip check Mx8Q` — if a package carries no public key, the check is skipped
+  (an older-package compatibility path worth investigating).
+- `Script`, `telnetd`, `sleep`, `/debug` — the upgrader's command vocabulary includes a script runner.
+- `OPTelnetControl`, `TelnetCommand`, `TelnetDisEnable` — a DVRIP operation dedicated to telnet control.
+- `TelnetEnable`, `EnableKey`, `GetSaftyCode`, `no keys : %s` — enabling telnet requires a **safety code**
+  (the same handshake the XMTelnet utility asks for).
+- `close 9530 port!`, `/mnt/mtd/Log/9530Disable` — the debug port 9530 can be disabled by a file on the
+  writable partition.
+
+**`bin/netinit` and `bin/dvrHelper`**:
+
+- `telnetctrl`, `xmuart`, `Listening at port %d for debug...` — both read the `telnetctrl`/`xmuart`
+  environment values and start the debug listener when enabled.
+
+**`bin/armbenv`**: the tool that reads/writes those environment values.
+
+**`etc/inittab`** (romfs):
+
+```
+::respawn:/sbin/getty -L ttyS000 115200 vt100 -n root -I "Auto login as root ..."
+```
+
+That is an **automatic root login on the UART console**, no password. It is the reliable way in, and from
+there `armbenv -s telnetctrl 1` enables network telnet.
+
+So the three gates are:
+
+| path | gate |
+|---|---|
+| upgrade `InstallDesc` script | `VerifyMx8QSign` / `Mx8Q` signature |
+| DVRIP `OPTelnetControl` | `EnableKey` safety code |
+| `telnetctrl=1` at boot | needs a shell to set the environment |
+| UART console | none — auto root login |
+
+Ghidra's useful targets, if one wants to avoid opening the camera, are `VerifyMx8QSign`, the CRC check and
+the `Script` command parser in `Sofia`, plus the `OPTelnetControl` / `GetSaftyCode` handler. That is a real
+reverse-engineering project; the UART route needs no reverse engineering at all.
+
 ## Alternatives to get a shell
 
 1. **XMTelnet** (Windows utility, post-2020 protocol) — the vendor community tool for opening telnet on
