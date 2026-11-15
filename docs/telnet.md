@@ -167,3 +167,17 @@ that is exactly what this firmware now refuses for unsigned descriptors.
 - If you want a **persistent shell**, the realistic path is UART (or SPI), then set `telnetctrl=1` in the
   U-Boot environment so it survives upgrades.
 - Keep a full flash dump before any of this.
+
+## Reference: XM530 root/UART notes
+
+The XM530 family is documented in detail by *The cuckoo's nest*:
+
+- [Hacking a Chinese IP camera: part 1](https://kuku.eu.org/?projects%2Fxm530%2Fpart1) — UART pinout, U-Boot
+  `sf read` + `md.l` full-flash dump without a SOIC8 clip, the `xmuart` lock workaround, `init=/bin/sh`.
+- [Hacking a Chinese IP camera: part 2](https://kuku.eu.org/?projects%2Fxm530%2Fpart2) — why the root login
+  rejects the flash-dump password: `/mnt/mtd/Log/ns` is bind-mounted over `/etc/passwd`, and passwords
+  are preprocessed with an MD5 + byte-swap + mod-62 scheme (the "Dahua hash", e.g. `a` -> `Jszew7cB`).
+
+Applicability to XM535D1: the UART console already auto-logs root (see `inittab` above), so the password
+dance is unnecessary; `init=/bin/sh` remains a useful fallback, and the `sf read`/`md` method is a valid
+way to take the full dump if no SOIC8 clip is available.
