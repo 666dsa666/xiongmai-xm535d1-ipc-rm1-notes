@@ -63,11 +63,6 @@ in [`docs/openipc.md`](docs/openipc.md).
 - [`docs/security.md`](docs/security.md) — default credentials, hardening
 - [`docs/backup.md`](docs/backup.md) — full flash dump / recovery notes if you ever modify it
 
-## Related
-
-- Anyka AK3918EV330 Tuya camera: [666dsa666/ak3918-v330l-kerui-dump](https://github.com/666dsa666/ak3918-v330l-kerui-dump)
-- Xiaomi MJSXJ02CM: [666dsa666/xiaomi-mjsxj02cm-hacks](https://github.com/666dsa666/xiaomi-mjsxj02cm-hacks)
-
 ## Legal
 
 Notes on personally owned hardware. No vendor firmware is redistributed. Use at your own risk.
