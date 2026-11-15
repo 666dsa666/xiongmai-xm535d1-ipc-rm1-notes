@@ -13,6 +13,8 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 |---|---|
 | Board | `IPC-RM1-BLK535-2M6P V1.03` (silkscreen), `X-20240827` |
 | SoC | Xiongmai **XM535D1** (dual-core 32-bit DSP, Cortex-A5 class, H.265X) |
+| Firmware | `V5.01.R02.000A07F3.10010.346732.S.ONVIF 21.06` |
+| Model string | `XM535_X6E-WEQ_8M` (from ONVIF `GetDeviceInformation`) |
 | Flash | Winbond **W25Q128** family, 16 MB SPI NOR |
 | Lens / sensor | 2 MP, 6 mm (`2M6P`) |
 | PTZ | 2 stepper motors, ULN2803A driver |
