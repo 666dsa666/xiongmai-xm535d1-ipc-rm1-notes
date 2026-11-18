@@ -1,10 +1,11 @@
 # Reproducing the stock firmware in QEMU (OpenIPC qemu-bench, `xm535`)
 
-> **Not the unit's own dump.** The image built here is the official **`V5.07.X02`**
-> package (2025-09-06), not a flash read of the documented camera, which runs stock
-> **`V5.01.R02`** (2024-09-14). No dump existed when this was written; the package was the
-> closest available proxy. Booting the unit's real 8 MiB dump (CH341A) is the next step and
-> the only way to analyse the exact shipping binaries (see [backup.md](backup.md)).
+> **Not the unit's own dump, but now its exact build.** This image was first built from
+> the official **`V5.07.X02`** package. The exact **`V5.01.R02` (2024-09-14)** package —
+> the unit's shipping build — was later obtained and rebuilt the same way
+> (`xm535d1_v501_flash.img`), verifying U-Boot `Apr 26 2024`, kernel `#27 Aug 1 2024`.
+> A real 8 MiB flash dump (CH341A) is still the only way to see the unit's private config
+> (`/mnt/mtd` JFFS2) and any production-time divergence.
 
 This is the analysis setup used to reverse the telnet/debug handling **without touching the
 camera**. The official 8 MiB flash layout can be reconstructed from the vendor `V5.07.X02`

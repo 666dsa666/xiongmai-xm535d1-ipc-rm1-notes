@@ -2,11 +2,12 @@
 
 > **Which firmware was analysed?**
 > The **real unit** runs stock `V5.01.R02.000A07F3.10010.346732.0000000`
-> (build 2024-09-14). The **QEMU image** used for the deep reverse engineering is
-> rebuilt from the official **`V5.07.X02`** package (2025-09-06), because no flash dump of
-> the unit was available. Real-camera checks below are on V5.01; the code addresses,
-> `EnableKey` decoy, safety-code formula and 12901 protocol are from **V5.07** and must be
-> re-validated on a V5.01 dump once one is taken.
+> (build 2024-09-14). Its exact **V5.01.R02** package was later obtained and rebuilt into
+> QEMU; the deep protocol reverse used the official **`V5.07.X02`** package. Crucially,
+> the `/usr/bin/debug` binary (12901) is **byte-identical in V5.01 and V5.07**, so the
+> 12901 analysis applies to the unit build. `Sofia` differs (V5.01 SHA `4d43505c…`,
+> V5.07 `532045f0…`) but contains the same telnet strings; the V5.01 image was booted in
+> QEMU (`xm535`) and the real unit's DVRIP behaviour matches.
 
 Tested on `IPC-RM1-BLK535-2M6P V1.03`, XM535D1; see the note above for versions.
 
