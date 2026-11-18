@@ -42,3 +42,30 @@ ffprobe -v error -rtsp_transport tcp -read_intervals "%+3" \
 ```
 
 A non-zero frame count confirms the new credentials work.
+
+## Validated on the 2024 firmware (V5.01.R02)
+
+Re-tested on a stock unit with firmware `V5.01.R02.000A07F3.10010.346732.0000000`:
+
+| check | result |
+|---|---|
+| web UI login | `admin` + **blank** password accepted |
+| DVRIP (34567) login | `admin` + **blank** password accepted |
+| RTSP DESCRIBE with blank password in path | `200 OK` (streams HEVC) |
+| ONVIF `GetProfiles` / `GetStreamUri` on `:8899` without auth | answered; URI contains `password=tlJwpbo6` (hard-coded token) |
+| telnet 23 / 4321 | closed |
+| port 9530 (Xiongmai/HiSilicon "secret knock") | **closed** |
+| upgrade manifest | signed (`Mx8Q`), so the old unsigned telnet-opener upgrade is rejected |
+
+This matches the class of **CVE-2026-79394** (RTSP auth bypass),
+**CVE-2026-79396** (hard-coded/default accounts) and **CVE-2025-65857**
+(ONVIF `GetStreamUri` hard-coded credential). See [cves.md](cves.md).
+
+**Consequence:** on a shared LAN, anyone can watch the streams, move the PTZ and read
+the configuration with no credentials at all. Treat the camera as untrusted until the
+admin password is set and WAN access is blocked.
+
+## Going local-only
+
+There is no single cloud switch in the stock UI. See [cloud-cut.md](cloud-cut.md) for the
+tested options (WAN block at the router, PMS disable over DVRIP, static IP caveats).

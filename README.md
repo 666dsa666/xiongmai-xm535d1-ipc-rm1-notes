@@ -3,9 +3,13 @@
 Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and the
 **`IPC-RM1-BLK535-2M6P V1.03`** board (dated `X-20240827`).
 
-> **Status: no modification needed.** The stock firmware already exposes RTSP and ONVIF on the LAN, and
-> both streams carry video with the default credentials. OpenIPC can boot on this SoC but has **no video
-> backend** for it, so it is not a useful replacement here.
+> **Status:** stock firmware already exposes RTSP and ONVIF on the LAN, and both streams
+> carry video. No modification is needed for local streaming. The interesting work left
+> is **security** (default/blank credentials, unauthenticated ONVIF/RTSP) and **cutting
+> the cloud link** for a 100% local camera. See
+> [docs/cloud-cut.md](docs/cloud-cut.md) and [docs/cves.md](docs/cves.md).
+> OpenIPC can boot on this SoC but has **no video backend** for it, so it is not a useful
+> replacement here.
 
 ## Board
 
@@ -13,19 +17,19 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 |---|---|
 | Board | `IPC-RM1-BLK535-2M6P V1.03` (silkscreen), `X-20240827` |
 | SoC | Xiongmai **XM535D1** (dual-core 32-bit DSP, Cortex-A5 class, H.265X) |
-| Firmware | `V5.01.R02.000A07F3.10010.346732.S.ONVIF 21.06` |
+| Firmware tested | `V5.01.R02.000A07F3.10010.346732.0000000` (build 2024-09-14) |
 | Model string | `XM535_X6E-WEQ_8M` (from ONVIF `GetDeviceInformation`) |
 | Flash | Winbond **W25Q128** family, 16 MB SPI NOR |
 | Lens / sensor | 2 MP, 6 mm (`2M6P`) |
 | PTZ | 2 stepper motors, ULN2803A driver |
 | Storage | microSD slot |
-| Stock ports | 80 (Web Viewer), 554 (RTSP), 8899 (ONVIF), 34567 (Xiongmai P2P) |
+| Stock ports | 80 (Web Viewer), 554 (RTSP), 8899 (ONVIF), 34567 (Xiongmai P2P/DVRIP) |
 
-## It already streams — with the default credentials
+## It already streams
 
 ```
-rtsp://<ip>:554/user=admin_password=_channel=1_stream=0.sdp?real_stream    main
-rtsp://<ip>:554/user=admin_password=_channel=1_stream=1.sdp?real_stream    sub
+rtsp://<ip>:554/user=admin_password=_channel=1_stream=0.sdp?real_stream   main
+rtsp://<ip>:554/user=admin_password=_channel=1_stream=1.sdp?real_stream   sub
 ```
 
 Observed with `ffprobe -rtsp_transport tcp`:
@@ -35,39 +39,53 @@ Observed with `ffprobe -rtsp_transport tcp`:
 | `stream=0` | HEVC | 2304×2592 | 60 / 5 s |
 | `stream=1` | HEVC | 640×720 | 60 / 5 s |
 
-ONVIF also works unauthenticated on `:8899` (`/onvif/device_service`, `/onvif/media_service`) and returns
-stream URIs of the form:
-
-```
-rtsp://<ip>:554/user=admin_password=tlJwpbo6_channel=0_stream=0&onvif=0.sdp?real_stream
-```
-
-Profiles reported: `000 mainStream` (H.264 3072×2048), `001 subStream` (H.264 800×448),
-`002 snapStream` (JPEG 800×448).
-
-See [`docs/stock-streaming.md`](docs/stock-streaming.md) for the full probe results.
+The SDP also advertises an audio track (`m=audio 0 RTP/AVP 8`, PCM A-law). ONVIF on
+`:8899` answers **without authentication** and returns stream URIs of the form
+`rtsp://<ip>:554/user=admin_password=tlJwpbo6_…` (see the CVE notes).
 
 ## Read this before exposing it
 
-The camera ships with a **blank `admin` password** and ONVIF media calls that answer without auth. Change
-the password in the web UI and keep 554/8899/80 on the LAN only — see [`docs/security.md`](docs/security.md).
+The camera ships with a **blank `admin` password**, unauthenticated ONVIF, and RTSP that
+accepts the empty password embedded in the URL. That is a critical exposure if the camera
+is ever reachable from the internet, and a privacy problem on a shared LAN.
 
-## OpenIPC
+- Never port-forward 80, 554, 8899 or 34567; disable UPnP.
+- Change the admin password, re-check RTSP/ONVIF afterwards.
+- Keep the camera on an isolated VLAN/SSID, or block its WAN access.
 
-`xm535d1_lite` exists in OpenIPC, but the firmware itself says *"No majestic yet"* for the V200 media
-pipeline — the image boots without any RTSP/ONVIF. Do not flash it and expect video. Details and citations
-in [`docs/openipc.md`](docs/openipc.md).
+Details and CVE mapping: [docs/cves.md](docs/cves.md) and
+[docs/security.md](docs/security.md).
+
+## Cloud / P2P
+
+The stock firmware is cloud-first: PMS push to `push.umeye.cn`, a cloud agent (RPS
+config, cloud upgrade, cloud storage helpers) and ThroughTek/Kalay P2P (`TUTKID`). There
+is no single "cloud off" switch; the reliable cut is network-level (router WAN block),
+optionally combined with `NetWork.PMS.Enable=false` over DVRIP. Tested options, trade-offs
+and verification commands: [docs/cloud-cut.md](docs/cloud-cut.md).
+
+## Firmware
+
+Official package `V5.07.X02` (2025-09-06), vendor link, SHA-256, partition list and
+what it contains: [docs/firmware-v507.md](docs/firmware-v507.md).
+
+Key points: upgrades are **signed** (`Mx8Q` in `InstallDesc`), which closes the old
+unsigned "telnet opener" upgrade trick; ports 23/4321/**9530** are closed on this build;
+a persistent shell requires UART (auto root login on the board console) or an SPI dump.
 
 ## Documents
 
-- [`docs/stock-streaming.md`](docs/stock-streaming.md) — ports, RTSP/ONVIF endpoints, observed streams
-- [`docs/firmware.md`](docs/firmware.md) — current version, official update file, update methods, hack status
-- [`docs/telnet.md`](docs/telnet.md) — telnet attempt result and how to keep a shell across firmware upgrades
-- [`docs/openipc.md`](docs/openipc.md) — what OpenIPC supports on XM535D1 and why it has no video
-- [`docs/security.md`](docs/security.md) — default credentials, hardening
-- [`docs/backup.md`](docs/backup.md) — full flash dump / recovery notes if you ever modify it
+- [docs/stock-streaming.md](docs/stock-streaming.md) — ports, RTSP/ONVIF endpoints, observed streams
+- [docs/firmware.md](docs/firmware.md) — current version, official update file, update methods
+- [docs/firmware-v507.md](docs/firmware-v507.md) — **new**: V5.07.X02 package analysis (InstallDesc, partitions, PMS/cloud strings)
+- [docs/cves.md](docs/cves.md) — **new**: CVEs and validated weaknesses (RTSP/ONVIF auth, hard-coded creds, 9530)
+- [docs/cloud-cut.md](docs/cloud-cut.md) — **new**: how to go 100% local (WAN block, PMS disable, static IP caveats)
+- [docs/telnet.md](docs/telnet.md) — telnet attempts, gates, UART path
+- [docs/openipc.md](docs/openipc.md) — why OpenIPC has no video on XM535D1
+- [docs/security.md](docs/security.md) — default credentials, hardening
+- [docs/backup.md](docs/backup.md) — full flash dump / recovery notes
 
 ## Legal
 
-Notes on personally owned hardware. No vendor firmware is redistributed. Use at your own risk.
+Notes on personally owned hardware. No vendor firmware is redistributed.
 Documentation CC BY 4.0, snippets MIT (see [`LICENSE`](LICENSE)).
