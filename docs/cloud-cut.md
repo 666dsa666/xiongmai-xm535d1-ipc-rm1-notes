@@ -153,3 +153,20 @@ curl -s http://<ip>:8899/onvif/device_service -H 'Content-Type: application/soap
   (observation only; it has no effect on LAN streaming).
 - For true "100% local" without router involvement: firmware patch or local firewall
   rules from a root shell.
+
+
+## Tested DVRIP switches (2026-11-18)
+
+On firmware `V5.01.R02` these can be toggled over DVRIP (`admin` / blank password) and
+read back immediately:
+
+| Config | Default | Set to | Effect |
+|---|---|---|---|
+| `NetWork.PMS` | `Enable=true`, `push.umeye.cn:80` | `Enable=false` | stops cloud push/alarms (tested, read-back OK) |
+| `NetWork.OnlineUpgrade` | `Enable=true`, `AutoUpgradeImp=true`, `upgrade.secu100.net:8083` | `Enable=false`, `AutoCheck=false`, `AutoUpgradeImp=false` | **blocks cloud-triggered firmware upgrades** (tested) |
+| `Ability.TelnetDebugMode.Open` | `false` | `true` | no visible effect on telnet ports, even after reboot (tested; left `false`) |
+
+`System.Cloud` is null and there is no DVRIP-exposed P2P/TUTK switch
+(`NetWork.NetP2P`, `NetWork.P2P`, `NetWork.TUTK`, `NetWork.RPS` answer `Ret 607`).
+The cloud agent and TUTK keep working while the device has internet, so the router-side
+WAN block remains the reliable cut.

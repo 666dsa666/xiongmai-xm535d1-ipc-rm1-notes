@@ -78,3 +78,35 @@ Interpretation:
 - Never flash a package for a different `Hardware`/`DevID`; the `Mx8Q`/metadata check will
   reject it at best, brick it at worst.
 - Test network-level changes (PMS/cloud) separately from flashing.
+
+
+## Network telnet — reverse engineering results
+
+(2026-11-18, firmware `V5.01.R02.000A07F3.10010.346732.0000000`, unit at `192.168.0.153`)
+
+DVRIP message **2040 (`0x7f8`)** dispatches the `OnTelnetControl` handler
+(`Sofia` function at `0x1bf1ac`). The protocol is:
+
+1. `{"Name":"GetSaftyCode"}` → `{"GetSaftyCode":{"Code":"<base64>"}}` — a fresh
+   **RSA-1024 challenge** (128 bytes, random on every call).
+2. `{"Name":"OPTelnetControl","OPTelnetControl":{"TelnetCommand":"TelnetEnable","EnableKey":"…"}}`
+   — enables telnet when `EnableKey` matches the challenge plaintext.
+3. `{"Name":"OPTelnetControl","OPTelnetControl":{"TelnetCommand":"TelnetDisEnable"}}`
+   — disables it.
+
+Inside `Sofia`:
+
+- the RSA **public** key is parsed from a text file (fields `N = …`, `E = …`) under
+  `/usr/bin/Squirrel/rs485/` (on this build `TelPubBase`, 288-byte encrypted blob);
+- the plaintext password is built with `snprintf("%sHk2W#5%d%d%d", …)` and stored in
+  `/var/T8aYMi2q`;
+- the returned `Code` is that password encrypted with the RSA public key, so `EnableKey`
+  must be the password itself.
+
+Setting `Ability.TelnetDebugMode.Open = true` is accepted and persists across a reboot,
+but **does not open any telnet port** (23, 4321 and 9530 stay closed before/after reboot).
+
+**Conclusion:** the RSA **private** key (a.k.a. the "super password" of the XMTelnet tool,
+which asks the user to send a 10-digit code to the vendor service) is not in the firmware.
+A network-only root path on this build needs that vendor secret or a successful
+reverse-engineering of the keypair. **UART remains the realistic path.**

@@ -69,3 +69,28 @@ admin password is set and WAN access is blocked.
 
 There is no single cloud switch in the stock UI. See [cloud-cut.md](cloud-cut.md) for the
 tested options (WAN block at the router, PMS disable over DVRIP, static IP caveats).
+
+
+## Hidden/extra account and cloud channels (2026-11-18)
+
+On a stock unit, DVRIP `System` config contains an **extra user** not visible in the normal
+web UI account list:
+
+```json
+"ExUserMap": { "UserNum": 1,
+  "User": [ { "Name": "twhn", "Password": "", "PasswordV2": "YeRwfERlGFUXJIkMfSCQkQ==" } ] }
+```
+
+Who/what created it is unknown (it may be an extended/cloud user). Audit it before
+trusting the device; it is a candidate for "unexpected account on the camera".
+
+Other cloud channels seen in config:
+
+- `NetWork.OnlineUpgrade`: `Enable=true`, `AutoCheck=true`, `AutoUpgradeImp=true`,
+  `ServerAddr=upgrade.secu100.net`, `ServerPort=8083` — **remote firmware upgrade path**,
+  disable it if the camera must stay local.
+- `Status.NatInfo`: `{"NaInfoCode":"2:18.195.77.158/1/0/+111","NatStatus":"Conneted"}`
+  — the P2P/NAT channel is established while online.
+- `NetWork.PMS.Enable=true` → `push.umeye.cn:80` (push/alarms).
+
+None of these are required for local RTSP/ONVIF/web; all are blocked by cutting WAN.
