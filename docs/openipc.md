@@ -28,15 +28,16 @@ stream.
 
 ## Additional mismatch
 
-The defconfig sets `BR2_OPENIPC_FLASH_SIZE="8"`, while this board carries a **16 MB** W25Q128. A custom
-build would be needed even to match the flash layout.
+The defconfig sets `BR2_OPENIPC_FLASH_SIZE="8"`, which **matches** this board's 8 MiB
+FM25Q64 flash. The reason not to flash OpenIPC is the missing XM535 video backend, not the
+flash size.
 
 ## Conclusion
 
 Do not flash OpenIPC on this board if you want video. The stock firmware already provides RTSP/ONVIF
 locally (see [`stock-streaming.md`](stock-streaming.md)).
 
-If you only want a Linux shell/Wi-Fi experiments, the lite image can be built for 16 MB and booted after a
+If you only want a Linux shell/Wi-Fi experiments, the lite image can be built for 8 MiB and booted after a
 full flash dump — but you lose the only working video path, so keep the dump and restore it afterwards.
 
 ## References

@@ -1,183 +1,99 @@
-# Telnet — what works, what does not, and how to keep it
+# Telnet / debug shell — what exists and what the reverse engineering proved
 
-## State of this unit
+Tested on `IPC-RM1-BLK535-2M6P V1.03`, XM535D1, stock `V5.01.R02.000A07F3…` and the
+official `V5.07.X02` (2025-09-06) image (also reproduced in the `xm535` QEMU machine).
 
-| item | value |
-|---|---|
-| Firmware | `V5.01.R02.000A07F3.10010.346732.0000000` |
-| Build time | 2024-09-14 15:08:59 |
-| DVRIP (port 34567) | open, login `admin` / empty password works |
-| telnet 23 | closed |
-| telnet 4321 | closed |
-| web UI 80 | open ("Web Viewer") |
-| ONVIF 8899 | open |
+## TL;DR
 
-## Attempt: Shell command through the upgrade descriptor
+- Ports **23, 4321 and 9530 are closed**. There is **no telnet daemon** on the stock firmware.
+- DVRIP message **2040** / `OPTelnetControl` is a **decoy**: `EnableKey` is *not* validated;
+  it only deletes `/mnt/mtd/Log/9530Disable` and answers `Ret=100`. It opens nothing.
+- The real debug service is **`/usr/bin/debug` on TCP 12901**, enabled by the U-Boot env
+  variable **`telnetctrl`**. It is a **vendor-only** binary protocol protected by an
+  **RSA signature** (the device holds only the public key). After a successful handshake
+  it can popen() root commands — but that requires the vendor RSA private key.
+- **Conclusion: there is no network-only root/telnet path on this firmware.** Use the UART
+  console (auto root login) or a full SPI dump and offline rootfs patch.
 
-The classic Xiongmai method (implemented by
-[`python-dvr`'s `telnet_opener.py`](https://github.com/vklimk/python-dvr/blob/master/telnet_opener.py)) logs in
-over DVRIP and submits a fake upgrade package whose `InstallDesc` contains:
+## DVRIP OP 2040 — `OnTelnetControl`
 
-```json
-"UpgradeCommand": [
-  {"Command": "Shell", "Script": "busybox telnetd -F -p 4321 -l /bin/sh"}
-]
-```
+Handler in `Sofia` (ELF32, fixed base `0x10000`): `0x1bf1ac`, dispatch through
+`0x1bf318` (Name) → `0x1bf334` (`== "OPTelnetControl"`) → `0x1bf36c` (`TelnetCommand`)
+→ `0x1bf430` (`== "TelnetEnable"`).
 
-The descriptor used here:
+For `TelnetEnable` the code:
 
-```json
-{
-  "Hardware": "XM535_X6E-WEQ_8M",
-  "DevID": "000A07F31001000000000000",
-  "CompatibleVersion": 2,
-  "Vendor": "General",
-  "CRC": "1ce6242100007636",
-  "UpgradeCommand": [{"Command": "Shell", "Script": "busybox telnetd -F -p 4321 -l /bin/sh"}]
-}
-```
+1. `0x1bf448` reads `OPTelnetControl["EnableKey"]` as a JSON string;
+2. `0x1bf45c` builds a temporary `std::string` and destroys it at `0x1bf468`;
+3. `0x1bf460` `unlink("/mnt/mtd/Log/9530Disable")`;
+4. `0x1bf470` replies `Ret=100`.
 
-Result:
+There is **exactly one** `EnableKey` string reference in the whole binary, and no
+comparison, hash, RSA call or file lookup between reading it and returning. GDB confirmed
+identical breakpoint traces for `"AAAA"`, the real `/var/T8aYMi2q` value and `""`.
+`TelnetDisEnable` just creates `/mnt/mtd/Log/9530Disable` with `"close 9530 port!\n"`.
 
-```
-Ready to upgrade
-Uploaded 100.00%
-End of file
-Waiting for upgrade...
-{'Name': 'OPSystemUpgrade', 'Ret': 100, ...}
-{'Name': 'OPSystemUpgrade', 'Ret': 100, ...}
-{'Name': 'OPSystemUpgrade', 'Ret': 514, ...}
-{'Name': 'OPSystemUpgrade', 'Ret': 6, ...}
-```
+`GetSaftyCode` is a **separate cloud/RSA flow** and is not needed for telnet. It was
+nevertheless fully reversed (see below) because it documents the vendor key material.
 
-`Ret 514` / `Ret 6` = the firmware rejected the package. Ports 23 and 4321 stayed closed, the camera
-remained healthy (80/554/8899/34567 up).
+## The real debug service: `/usr/bin/debug`, TCP 12901
 
-**Conclusion:** on this 2024 firmware the unsigned `InstallDesc` + `Shell` path is closed (the post-2020
-Xiongmai hardening). The method that worked on 2020-era XM boards does not apply here.
+`/usr/bin/debug` (126 KB ARM binary, in `user_sq`):
 
-## What the official firmware reveals
+- main `0x115b8`; gate at `0x14d90` = `atoi(envgetvalue("telnetctrl"))` plus an obfuscated
+  licence path under `/mnt/custom`. If disabled it prints
+  `LIBDVR : Debug: is Disabled!` and exits.
+- if enabled: `pthread_create(DebugProc_thrd)` binds **hard-coded port 12901**
+  (`movw r0,#0x3265` at `0x14460`).
+- packet layer: 8-byte random token, 8-byte checksum, length consistency, CRC32; dispatch
+  Open / Run / Check / Update / RS session; fields named DDD/CCC/MMM/OOO/EEE.
+- **authentication**: `RS` session performs an **RSA PKCS#1 signature verification**
+  (`Debug RSV: V OK/V Failed`) against the public key in `/mnt/mtd/Log/TelPubBase`
+  (fallback `/usr/bin/Squirrel/rs485/TelPubBase`). The device stores **only the public
+  key**, so a client must hold the vendor's RSA private key.
+- after authentication, the `Run` handler at `0x12c80` calls `popen(cmd,"r")` on the
+  client-supplied command — root command execution, but behind the vendor key.
+- login record: `LibXmDvr_Debug_setDefaultPasswd` writes
+  `/mnt/mtd/Log/ns` = `root:697SJ23Ru0j3M:0:0:root:/:/bin/sh` (DES crypt(3) hash,
+  salt `69`). The clear password is not stored in the firmware.
+- no `set_uboot_env` import: the 12901 protocol cannot enable itself or change
+  `telnetctrl`/`xmuart`.
 
-Extracting the vendor image (`user-x` SquashFS + `romfs-x` CramFS) shows exactly how telnet is gated:
+On the unit documented here **12901 is reachable** (the vendor debug service is running).
+It is a vendor backdoor, not a usable user shell; block it at the firewall if you do not
+need vendor support.
 
-**`bin/Sofia`** (the application):
+## How to actually get a shell
 
-- `VerifyMx8QSign`, `UpMx8Q`, `Mx8Q` — the upgrade package signature check that rejected the fake
-  `InstallDesc`.
-- `VerifyMx8QSign, no pub, skip check Mx8Q` — if a package carries no public key, the check is skipped
-  (an older-package compatibility path worth investigating).
-- `Script`, `telnetd`, `sleep`, `/debug` — the upgrader's command vocabulary includes a script runner.
-- `OPTelnetControl`, `TelnetCommand`, `TelnetDisEnable` — a DVRIP operation dedicated to telnet control.
-- `TelnetEnable`, `EnableKey`, `GetSaftyCode`, `no keys : %s` — enabling telnet requires a **safety code**
-  (the same handshake the XMTelnet utility asks for).
-- `close 9530 port!`, `/mnt/mtd/Log/9530Disable` — the debug port 9530 can be disabled by a file on the
-  writable partition.
+1. **UART console** — `/etc/inittab` contains
+   `::respawn:/sbin/getty -L ttyS000 115200 vt100 -n root -I "Auto login as root ..."`:
+   root without password on the serial console. Locate the board UART pads, 115200 8N1.
+   In U-Boot: `setenv xmuart 0` keeps the kernel console, `saveenv`.
+2. **SPI dump + offline patch** — read the **8 MiB** flash (FM25Q64, SOIC-8, CH341A),
+   patch the rootfs (e.g. add your own `telnetd`/SSH, disable cloud) and write it back.
+   See [backup.md](backup.md).
+3. The U-Boot env variable **`telnetctrl=1` only starts the vendor 12901 debug service**,
+   not a telnet login. Do not mistake it for a usable shell.
 
-**`bin/netinit` and `bin/dvrHelper`**:
+## Appendix — `GetSaftyCode` / `/var/T8aYMi2q` (fully reversed and emulator-validated)
 
-- `telnetctrl`, `xmuart`, `Listening at port %d for debug...` — both read the `telnetctrl`/`xmuart`
-  environment values and start the debug listener when enabled.
+- `TelPubBase` is an AES-128-CBC encrypted blob; key
+  `32DA1079E2B83679C22E8137C9223E53`, IV `6D353F2551502466473D2D0000000000`
+  (IV reset per 128-byte chunk). Plaintext is an RSA-1024 public key
+  (`N = 9F25737B…4217F7`, `E = 010001`).
+- `S = UPPER(MD5(sprintf("%sHk2W#5%d%d%d", derive8(SN,date), Y%109, M, D)))`
+  (32 hex), written to `/var/T8aYMi2q`.
+- `derive8` (`0x3e18c`) = `MD5(SN[0] + "YYYYMMDD" + SN[9:])`, digest bytes 4..11 as
+  16 lowercase hex, then chars 5..12 mapped `ascii % 10` (mode 0 at `0x3be818`).
+- `Code = base64(RSA_public_encrypt(S))` with random PKCS#1 padding → 172 chars.
+- Emulator proof: with an empty SN and `Y=M=D=0`, `S` is exactly
+  `C52DEAF11BBF968925BA13DEC6D88EB5 = MD5("08217688Hk2W#5000")`.
+- The returned `Code` cannot be decrypted without the vendor **private** key; and on this
+  firmware `S`/`Code` are not used by `TelnetEnable` anyway.
 
-**`bin/armbenv`**: the tool that reads/writes those environment values.
+## References
 
-**`etc/inittab`** (romfs):
-
-```
-::respawn:/sbin/getty -L ttyS000 115200 vt100 -n root -I "Auto login as root ..."
-```
-
-That is an **automatic root login on the UART console**, no password. It is the reliable way in, and from
-there `armbenv -s telnetctrl 1` enables network telnet.
-
-So the three gates are:
-
-| path | gate |
-|---|---|
-| upgrade `InstallDesc` script | `VerifyMx8QSign` / `Mx8Q` signature |
-| DVRIP `OPTelnetControl` | `EnableKey` safety code |
-| `telnetctrl=1` at boot | needs a shell to set the environment |
-| UART console | none — auto root login |
-
-Ghidra's useful targets, if one wants to avoid opening the camera, are `VerifyMx8QSign`, the CRC check and
-the `Script` command parser in `Sofia`, plus the `OPTelnetControl` / `GetSaftyCode` handler. That is a real
-reverse-engineering project; the UART route needs no reverse engineering at all.
-
-## Alternatives to get a shell
-
-1. **XMTelnet** (Windows utility, post-2020 protocol) — the vendor community tool for opening telnet on
-   newer XMeye firmware. It uses a "safety code" handshake with its author, so it is not something that
-   can be automated or verified here.
-2. **UART** — open the camera, find the debug UART (115200 8N1, XM535 boards typically expose one near the
-   SoC), stop U-Boot, get a shell. Requires opening the device and a USB-TTL adapter.
-3. **SPI** — full 16 MB dump with the CH341A; offline rootfs modification is possible but riskier than
-   UART. See [`backup.md`](backup.md).
-
-Nothing here is needed for RTSP/ONVIF, which already work (`stock-streaming.md`).
-
-## Keeping telnet across a firmware upgrade
-
-This only becomes relevant once a shell is obtained. Firmware upgrades replace the rootfs, so anything
-written in `/etc` is lost. The persistence options, best first:
-
-### 1. U-Boot environment — survives upgrades
-
-Xiongmai firmware reads its configuration from the U-Boot environment. The relevant flags:
-
-- `telnetctrl=1` — start the telnet service at boot
-- `xmuart=0` — keep the UART console enabled/disabled as desired
-
-From a root shell, using the vendor env tool:
-
-```sh
-armbenv -s telnetctrl 1
-armbenv -s xmuart 0
-```
-
-or from the U-Boot prompt:
-
-```
-setenv telnetctrl 1
-saveenv
-```
-
-The environment lives in its own flash area and is **not** rewritten by a normal firmware upgrade, so this
-is the most upgrade-proof way to keep telnet available. (`telnet_opener.py` itself uses
-`armbenv -s xmuart 0; armbenv -s telnetctrl 1` for exactly this purpose.)
-
-### 2. `/mnt/mtd` configuration partition — usually kept
-
-The writable JFFS2 settings partition (`/mnt/mtd`) normally survives firmware upgrades, unlike the rootfs.
-A startup hook there (e.g. a script the vendor init already runs) can relaunch `telnetd`, but this depends
-on the firmware's init scripts and can be wiped by a "full" upgrade.
-
-### 3. Rootfs modification — not persistent
-
-Editing `/etc/init.d/*` works only until the next upgrade, which replaces the read-only rootfs. Do not rely
-on it.
-
-### 4. The upgrade package itself
-
-If you control the upgrade file, the vendor upgrade mechanism can carry commands (as the rejected attempt
-above shows). A future signed/official package with a `Shell` command would run after the upgrade — but
-that is exactly what this firmware now refuses for unsigned descriptors.
-
-## Practical recommendation
-
-- For **video**: no shell needed, stock RTSP/ONVIF already work.
-- If you want a **persistent shell**, the realistic path is UART (or SPI), then set `telnetctrl=1` in the
-  U-Boot environment so it survives upgrades.
-- Keep a full flash dump before any of this.
-
-## Reference: XM530 root/UART notes
-
-The XM530 family is documented in detail by *The cuckoo's nest*:
-
-- [Hacking a Chinese IP camera: part 1](https://kuku.eu.org/?projects%2Fxm530%2Fpart1) — UART pinout, U-Boot
-  `sf read` + `md.l` full-flash dump without a SOIC8 clip, the `xmuart` lock workaround, `init=/bin/sh`.
-- [Hacking a Chinese IP camera: part 2](https://kuku.eu.org/?projects%2Fxm530%2Fpart2) — why the root login
-  rejects the flash-dump password: `/mnt/mtd/Log/ns` is bind-mounted over `/etc/passwd`, and passwords
-  are preprocessed with an MD5 + byte-swap + mod-62 scheme (the "Dahua hash", e.g. `a` -> `Jszew7cB`).
-
-Applicability to XM535D1: the UART console already auto-logs root (see `inittab` above), so the password
-dance is unnecessary; `init=/bin/sh` remains a useful fallback, and the `sf read`/`md` method is a valid
-way to take the full dump if no SOIC8 clip is available.
+- CVE notes: [cves.md](cves.md).
+- Root path matrix: [root.md](root.md).
+- Reproducing the stock firmware in QEMU: [emulation.md](emulation.md).
+- The 2020 "9530 secret knock" research does **not** apply to this build (see cves.md).

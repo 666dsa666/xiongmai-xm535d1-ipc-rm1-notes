@@ -8,10 +8,11 @@ it. This page records what exists, what was tested, and what is worth trying.
 | Path | Status | Effort / risk |
 |---|---|---|
 | **UART console** | **Works by design**: `/etc/inittab` auto-logs root on the serial console | open the camera, find UART pads (not identified on this board revision yet), USB-TTL |
-| SPI flash dump + offline patch | Possible (W25Q128, SOIC-8, CH341A) | needs a clip/programmer; no recovery button on the board |
-| **Telnet opener over DVRIP** (`OPTelnetControl`) | **Present in firmware**, gated by `EnableKey`/`GetSaftyCode` | reverse the key handshake in `Sofia`; no hardware access |
+| SPI flash dump + offline patch | Possible (**FM25Q64**, 8 MiB, SOIC-8, CH341A) | needs a clip/programmer; no recovery button on the board |
+| **DVRIP `OPTelnetControl`** | **Decoy**: `EnableKey` not validated; opens nothing (see below) | no hardware access, but no shell either |
 | Unsigned upgrade (`InstallDesc` + `Shell`) | **Rejected on V5.01** (`Ret 514/6`), but V5.07 contains a "no pub, skip check Mx8Q" compatibility path | reverse `VerifyMx8QSign` / `doMetadataCheck`; craft package |
 | Port **9530** "secret knock" | **Closed** on this unit (23/4321/9530 refused) | not available on this build |
+| Vendor debug **12901** (`/usr/bin/debug`) | **Open**, gated by `telnetctrl`; RSA vendor handshake | vendor-only, not a user shell; firewall it |
 | Older firmware | **No pre-2020 build for this SoC**; oldest known is V5.00.R02 (2024-04-18), not publicly downloadable | not a root path |
 
 ## Older firmware — what exists
@@ -74,39 +75,39 @@ Interpretation:
 ## Safety
 
 - No documented recovery button/SD recovery mode on this board.
-- A full 16 MB SPI dump (twice, compared) is the only safety net.
+- A full **8 MiB** SPI dump (twice, compared) is the only safety net.
 - Never flash a package for a different `Hardware`/`DevID`; the `Mx8Q`/metadata check will
   reject it at best, brick it at worst.
 - Test network-level changes (PMS/cloud) separately from flashing.
 
 
-## Network telnet — reverse engineering results
 
-(2026-11-18, firmware `V5.01.R02.000A07F3.10010.346732.0000000`, unit at `192.168.0.153`)
+## Network telnet — definitive reverse-engineering result
 
-DVRIP message **2040 (`0x7f8`)** dispatches the `OnTelnetControl` handler
-(`Sofia` function at `0x1bf1ac`). The protocol is:
+(2026-11-18, stock `V5.01.R02…` and official `V5.07.X02`, unit at `192.168.0.153`; validated in the `xm535` QEMU machine)
 
-1. `{"Name":"GetSaftyCode"}` → `{"GetSaftyCode":{"Code":"<base64>"}}` — a fresh
-   **RSA-1024 challenge** (128 bytes, random on every call).
-2. `{"Name":"OPTelnetControl","OPTelnetControl":{"TelnetCommand":"TelnetEnable","EnableKey":"…"}}`
-   — enables telnet when `EnableKey` matches the challenge plaintext.
-3. `{"Name":"OPTelnetControl","OPTelnetControl":{"TelnetCommand":"TelnetDisEnable"}}`
-   — disables it.
+The DVRIP `OPTelnetControl` operation is a **decoy**:
 
-Inside `Sofia`:
+- `GetSaftyCode` returns an RSA-1024 challenge (`Code`, 172-char base64) and creates
+  `/var/T8aYMi2q` (32 hex) from
+  `UPPER(MD5(sprintf("%sHk2W#5%d%d%d", derive8(SN,date), Y%109, M, D)))`;
+- `{"Name":"OPTelnetControl","OPTelnetControl":{"TelnetCommand":"TelnetEnable","EnableKey":"…"}}`
+  accepts **any** `EnableKey`, deletes `/mnt/mtd/Log/9530Disable` and returns `Ret=100`.
+  There is no comparison, hash or RSA check of the key in the handler (`Sofia`
+  `0x1bf1ac`, one `EnableKey` xref only), and **no port starts listening**;
+- the `GetSaftyCode.Code` cannot be decrypted without the vendor RSA private key, but it
+  is not used by the telnet path anyway.
 
-- the RSA **public** key is parsed from a text file (fields `N = …`, `E = …`) under
-  `/usr/bin/Squirrel/rs485/` (on this build `TelPubBase`, 288-byte encrypted blob);
-- the plaintext password is built with `snprintf("%sHk2W#5%d%d%d", …)` and stored in
-  `/var/T8aYMi2q`;
-- the returned `Code` is that password encrypted with the RSA public key, so `EnableKey`
-  must be the password itself.
+The real debug shell is **`/usr/bin/debug` on TCP 12901**. It is started by `dvrHelper`
+only when the U-Boot env variable **`telnetctrl=1`**, and its protocol authenticates with
+an **RSA signature verified against the vendor public key** (`/mnt/mtd/Log/TelPubBase`).
+After that handshake it can `popen()` root commands, but only the holder of the **vendor
+private key** can get there. Its login record is `/mnt/mtd/Log/ns` =
+`root:697SJ23Ru0j3M:…` (DES crypt(3), clear password not in firmware). Ports 23, 4321 and
+9530 are closed; 12901 is the vendor backdoor and should be firewalled.
 
-Setting `Ability.TelnetDebugMode.Open = true` is accepted and persists across a reboot,
-but **does not open any telnet port** (23, 4321 and 9530 stay closed before/after reboot).
-
-**Conclusion:** the RSA **private** key (a.k.a. the "super password" of the XMTelnet tool,
-which asks the user to send a 10-digit code to the vendor service) is not in the firmware.
-A network-only root path on this build needs that vendor secret or a successful
-reverse-engineering of the keypair. **UART remains the realistic path.**
+**Conclusion:** there is **no network-only root/telnet path** on this firmware. The
+vendor's `EnableKey` gate was removed/ignored in V5.01/V5.07, but the only service it
+would have enabled is the RSA-protected vendor debug channel. Root therefore still needs
+**UART** (auto-login in `/etc/inittab`) or a **full 8 MiB SPI dump + offline rootfs patch**.
+Details and emulator reproduction: [telnet.md](telnet.md), [emulation.md](emulation.md).

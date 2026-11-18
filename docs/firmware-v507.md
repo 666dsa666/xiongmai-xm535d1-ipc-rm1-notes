@@ -119,7 +119,7 @@ lists `V5.00.R02.000A07F3…` (2024-04-18), `V5.01.R02…` (the build on this un
 
 - Upgrades are **signed and one-way**; there is no documented recovery button or SD
   recovery mode on this board.
-- Keep a full 16 MB SPI dump (CH341A) if you plan to modify anything.
+- Keep a full 8 MiB SPI dump (CH341A) if you plan to modify anything.
 - Do not flash OpenIPC `xm535d1_lite` expecting video: the V200 media pipeline has no
   video backend ("No majestic yet").
 - This repository does **not** redistribute the vendor firmware; use the vendor URL.

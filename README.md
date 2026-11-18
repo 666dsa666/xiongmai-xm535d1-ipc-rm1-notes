@@ -10,6 +10,12 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 > [docs/cloud-cut.md](docs/cloud-cut.md) and [docs/cves.md](docs/cves.md).
 > OpenIPC can boot on this SoC but has **no video backend** for it, so it is not a useful
 > replacement here.
+>
+> The network telnet path was fully reverse-engineered: the DVRIP `EnableKey` gate is a
+> decoy, and the only real debug service (`/usr/bin/debug`, TCP **12901**) is protected by
+> the vendor's RSA private key. There is **no network-only root path**; use UART or an SPI
+> dump. The stock firmware is also reproducible in QEMU — see
+> [docs/telnet.md](docs/telnet.md) and [docs/emulation.md](docs/emulation.md).
 
 ## Board
 
@@ -19,7 +25,7 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 | SoC | Xiongmai **XM535D1** (dual-core 32-bit DSP, Cortex-A5 class, H.265X) |
 | Firmware tested | `V5.01.R02.000A07F3.10010.346732.0000000` (build 2024-09-14) |
 | Model string | `XM535_X6E-WEQ_8M` (from ONVIF `GetDeviceInformation`) |
-| Flash | Winbond **W25Q128** family, 16 MB SPI NOR |
+| Flash | Fudan **FM25Q64A13** (64 Mbit = **8 MiB**) SPI NOR, SOIC-8 |
 | Lens / sensor | 2 MP, 6 mm (`2M6P`) |
 | PTZ | 2 stepper motors, ULN2803A driver |
 | Storage | microSD slot |
@@ -49,7 +55,7 @@ The camera ships with a **blank `admin` password**, unauthenticated ONVIF, and R
 accepts the empty password embedded in the URL. That is a critical exposure if the camera
 is ever reachable from the internet, and a privacy problem on a shared LAN.
 
-- Never port-forward 80, 554, 8899 or 34567; disable UPnP.
+- Never port-forward 80, 554, 8899, 34567 or the vendor debug port **12901**; disable UPnP.
 - Change the admin password, re-check RTSP/ONVIF afterwards.
 - Keep the camera on an isolated VLAN/SSID, or block its WAN access.
 
@@ -70,18 +76,21 @@ Official package `V5.07.X02` (2025-09-06), vendor link, SHA-256, partition list 
 what it contains: [docs/firmware-v507.md](docs/firmware-v507.md).
 
 Key points: upgrades are **signed** (`Mx8Q` in `InstallDesc`), which closes the old
-unsigned "telnet opener" upgrade trick; ports 23/4321/**9530** are closed on this build;
-a persistent shell requires UART (auto root login on the board console) or an SPI dump.
+unsigned "telnet opener" upgrade trick; DVRIP `EnableKey` is **ignored**; ports
+23/4321/9530 are closed and the real vendor debug service is **12901** (RSA-protected,
+vendor-only). A persistent shell requires UART (auto root login on the board console) or an
+SPI dump — the flash is an 8 MiB **FM25Q64**.
 
 ## Documents
 
 - [docs/stock-streaming.md](docs/stock-streaming.md) — ports, RTSP/ONVIF endpoints, observed streams
 - [docs/firmware.md](docs/firmware.md) — current version, official update file, update methods
 - [docs/firmware-v507.md](docs/firmware-v507.md) — **new**: V5.07.X02 package analysis (InstallDesc, partitions, PMS/cloud strings)
-- [docs/cves.md](docs/cves.md) — **new**: CVEs and validated weaknesses (RTSP/ONVIF auth, hard-coded creds, 9530)
+- [docs/cves.md](docs/cves.md) — CVEs and validated weaknesses (RTSP/ONVIF auth, hard-coded creds, 9530/12901, new 2026 Sofia CVEs)
 - [docs/cloud-cut.md](docs/cloud-cut.md) — **new**: how to go 100% local (WAN block, PMS disable, static IP caveats)
-- [docs/root.md](docs/root.md) — **new**: root/shell path matrix (UART, DVRIP telnet opener, unsigned upgrade, older firmware findings)
-- [docs/telnet.md](docs/telnet.md) — telnet attempts, gates, UART path
+- [docs/root.md](docs/root.md) — **new**: root/shell path matrix and the definitive telnet verdict
+- [docs/telnet.md](docs/telnet.md) — **rewritten**: EnableKey decoy, safety-code reverse, 12901 vendor debug, UART path
+- [docs/emulation.md](docs/emulation.md) — **new**: rebuild the official 8 MiB image and boot it in qemu-bench `xm535`
 - [docs/openipc.md](docs/openipc.md) — why OpenIPC has no video on XM535D1
 - [docs/security.md](docs/security.md) — default credentials, hardening
 - [docs/backup.md](docs/backup.md) — full flash dump / recovery notes

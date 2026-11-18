@@ -1,68 +1,69 @@
-# CVEs and known weaknesses affecting XM535D1 / XMeye cameras
+# CVEs and known weaknesses affecting XM535D1 / XM530-family cameras
 
-Scope: Xiongmai **XM535D1** (`XM535_X6E-WEQ_8M`, `IPC-RM1-BLK535-2M6P` board), stock firmware
-`V5.01.R02.000A07F3.10010.346732.0000000` (build 2024-09-14) and the newer official
-`V5.07.X02` (2025-09-06) package.
+Scope: Xiongmai **XM535D1** (`XM535_X6E-WEQ_8M`, `IPC-RM1-BLK535-2M6P V1.03`), stock
+`V5.01.R02.000A07F3.10010.346732.0000000` (2024-09-14) and official `V5.07.X02`
+(2025-09-06).
 
-These CVEs were published for the XM530/XMeye platform family. The XM535D1 shares the
-same **Sofia** application daemon (RTSP, ONVIF, web UI, cloud agent), so the class of
-issues applies even where a CVE text names XM530. Items marked **validated** were
-reproduced on the unit documented here.
+**There is no CVE naming XM535D1.** The XM535D1 shares the **Sofia** daemon (RTSP, ONVIF,
+web, cloud, DVRIP) and the debug/service model with the **XM530** family, so XM530 CVEs
+are the relevant class. The `Status` column distinguishes what was **validated on this
+unit** from what is **assumed from the shared codebase**.
 
 | CVE / issue | What it is | Status on this unit |
 |---|---|---|
-| **CVE-2026-79394** | Sofia RTSP server does not enforce Digest auth (`need_auth=0` in `bin/config.xml`); unauthenticated `DESCRIBE`/`SETUP`/`PLAY` yields H.264/HEVC + G.711 audio. | **Validated equivalent**: `DESCRIBE rtsp://<ip>:554/user=admin_password=_channel=1_stream=0.sdp?real_stream` → `200 OK`, video plays with a blank password. |
-| **CVE-2026-79396** | Plain-text built-in accounts (`admin/admin`, `user/123456`) in `bin/config.xml` and in `Sofia` `.rodata`; seed logic can re-create them. | **Consistent**: `admin` with an **empty** password logs into web UI and DVRIP; RTSP path auth accepts empty password. Not disassembled on this specific build. |
-| **CVE-2025-65857** | `GetStreamUri` returns an RTSP URI containing a hard-coded credential token. | **Validated**: unauthenticated ONVIF `GetProfiles`/`GetStreamUri` on `:8899` returns `rtsp://…user=admin_password=tlJwpbo6_channel=0_stream=0…`. |
-| **CVE-2018-17919** | XMeye P2P cloud used an undocumented `default` account / default password. | Cloud side; relevant only while the device uses XMeye/umeye cloud services. |
-| **CVE-2018-17917** | MAC address → Cloud ID enumeration on XMeye cloud. | Cloud side; same caveat. |
-| **CVE-2017-16725** | NetSurveillance web stack overflow; **port 9530** "secret knock" that enables telnet on older Xiongmai/HiSilicon firmware. | **Not exploitable here**: ports **23, 4321 and 9530 are closed**; `/mnt/mtd/Log/9530Disable` gate exists in `Sofia`. |
-| Mirai-class botnets | Opportunistic exploitation of default credentials on Xiongmai devices. | Relevant **only if** the camera is reachable from the internet; see hardening. |
+| **CVE-2026-79396** | Hard-coded default accounts (`admin/admin`, `user/123456`) in `bin/config.xml` and compiled into `Sofia`; seed logic recreates them. | **Consistent / likely**: `config.xml` and `need_auth` strings exist in `Sofia`; DVRIP and web accept `admin` + **empty** password; the JFFS2 config contains factory `admin` and `ttyk` accounts. Not byte-for-byte disassembled. |
+| **CVE-2026-79395** | ONVIF `wsse:UsernameToken` auth bypass when the stored admin password is empty: `admin` + any password is accepted. | **Validated equivalent**: ONVIF `GetProfiles`/`GetStreamUri` work without a real credential; DVRIP login `admin`/empty succeeds. |
+| **CVE-2026-79394** | RTSP server ships with authentication disabled (`need_auth=0`): unauthenticated H.264/H.265 + G.711 stream. | **Partially applies**: a bare `DESCRIBE rtsp://<ip>:554/streamtype=0` returns **401**, but the default URL `…/user=admin_password=_channel=1_stream=0.sdp?real_stream` returns **200** and streams. In practice, anyone on the LAN can stream with the blank default password. |
+| **CVE-2026-79393** | Heap overflow in `Sofia` WS-Addressing `wsa5:Action` handling (>128 bytes) — remote unauth DoS / possible RCE. | **Family-wide, unassessed here**: our `Sofia` is a 2025 build of the same codebase; no crash tests run (would disrupt the live unit). |
+| **CVE-2026-34005** | Root command injection via `HostName` shell metacharacters in an **authenticated DVRIP** request (Sofia DVR/NVR 4.03.R11). | **Unknown / worth testing**: DVRIP `admin`/empty authenticates, and the XM535D1 uses the same Sofia family. Test in the QEMU emulator before trying on hardware. |
+| **CVE-2025-65856** | Authentication bypass on XM530 `V5.00.R02.000807D8…ONVIF 21.06`: unauthenticated device info + live video. | **Likely inherited**: unauth `GetProfiles`/`GetStreamUri` on `:8899` works on this unit (newer V5.07 build, same lineage). |
+| **CVE-2025-65857** | `GetStreamUri` returns an RTSP URI with a **hard-coded credential**. | **Validated**: unauthenticated ONVIF `GetStreamUri` returns `rtsp://…user=admin_password=tlJwpbo6…`. |
+| **CVE-2024-3765** | Critical vulnerability in XM530 `R80X30-PQ_8M` (details withheld in NVD). | **Unassessed**; same SoC family. |
+| **CVE-2020-22253** | Port **9530** "secret knock" starts telnet on older Xiongmai devices. | **Not applicable**: 23/4321/9530 are closed. This vendor moved the debug service to the RSA-protected **12901** (`/usr/bin/debug`); see [telnet.md](telnet.md). |
+| **CVE-2018-17917 / 17919** | XMeye P2P cloud: MAC→Cloud-ID enumeration; undocumented `default` account/password. | **Cloud side**: relevant while the camera uses `push.umeye.cn` (PMS). Cut the cloud or isolate the camera. |
+| **CVE-2018-17915** | XMeye cloud communication not fully encrypted. | Same: cloud side only. |
+| **CVE-2017-16725 / CVE-2018-10088** | NetSurveillance/uc-httpd stack overflows. | **Not applicable**: this firmware's web/ONVIF/RTSP stack is `Sofia`, not `uc-httpd`. |
+| Mirai-class botnets | Exploit default credentials on Xiongmai devices. | Relevant **only** if the camera is reachable from the Internet. |
 
-## Why "9530" does not work on this firmware
+## Non-CVE finding: vendor debug service on 12901
 
-The 2020 public "backdoor" research (Vladislav Yarmak / Censys / VulnCheck) relies on a
-special sequence sent to TCP **9530**, which starts a telnet daemon. On this unit:
-
-- `9530/tcp` is closed (connection refused), `23/tcp` and `4321/tcp` are closed;
-- the firmware contains `/mnt/mtd/Log/9530Disable` and `Ability.TelnetDebugMode` gates;
-- the upgrade package is signed (`InstallDesc` → `Mx8Q`), so the older "unsigned
-  `InstallDesc` + `Shell` command" telnet-opener path is rejected (see
-  [telnet.md](telnet.md)).
-
-Shell access therefore still requires **UART** (or an SPI dump), not a network exploit.
+On the documented unit, **TCP 12901 is open** — `/usr/bin/debug`, started by `dvrHelper`
+when the U-Boot env variable **`telnetctrl`** is set. Its protocol is protected by an
+**RSA signature check with the vendor's private key**; after a successful handshake it can
+`popen()` root commands. It is a vendor backdoor, not a user-accessible shell:
+block 12901 at the firewall/router, and never port-forward it. Details:
+[telnet.md](telnet.md).
 
 ## Practical exposure of a stock unit
 
 | Service | Port | Auth |
 |---|---|---|
 | HTTP web UI | 80 | `admin` + blank password |
-| RTSP | 554 | blank password embedded in the URL path; unauth `DESCRIBE` accepted |
-| ONVIF | 8899 | unauthenticated `GetProfiles`/`GetStreamUri` |
-| Xiongmai P2P/DVRIP | 34567 | `admin` + blank password for DVRIP login |
-| Cloud push (PMS) | outbound | `push.umeye.cn` |
+| RTSP | 554 | blank default password embedded in the URL; bare DESCRIBE gets 401 |
+| ONVIF | 8899 | unauthenticated `GetProfiles` / `GetStreamUri` (hard-coded password in URI) |
+| Xiongmai P2P/DVRIP | 34567 | `admin` + blank password |
+| Vendor debug (`/usr/bin/debug`) | **12901** | vendor RSA handshake (backdoor) |
+| Cloud push (PMS) | outbound | `push.umeye.cn:80` |
 
-This is a camera that **cannot be considered secure on an untrusted LAN**, and must never
-be exposed with a port forwarding/DMZ. The default credentials + unauth ONVIF/RTSP are
-enough for anyone on the same network to watch, control PTZ and read settings.
+This camera **cannot be considered secure on an untrusted LAN** and must never be exposed
+with port forwarding/DMZ. The defaults are enough to watch, control PTZ and read settings.
 
-## Hardening checklist (before any internet exposure)
+## Hardening checklist
 
-1. **Do not forward ports** 80/554/8899/34567; disable UPnP on the router.
-2. Change the web admin password (this also changes the RTSP path password; re-check
-   ONVIF afterwards).
-3. Put the camera on an **isolated VLAN/SSID** or block its WAN access.
-4. If the cloud/app is not needed, disable **PMS** (`NetWork.PMS.Enable=false` via
-   DVRIP, see [cloud-cut.md](cloud-cut.md)) and block outbound traffic.
-5. Treat the device as untrusted: it can still talk to the vendor cloud while online.
-6. If you suspect compromise: block WAN, reset the admin password, remove the device
-   from the cloud account, re-flash a known official firmware (signed package only).
+1. **Do not forward** 80/554/8899/34567/**12901**; disable UPnP on the router.
+2. Change the web admin password (also changes the RTSP path password; re-check ONVIF).
+3. Put the camera on an **isolated VLAN/SSID** and block its WAN access.
+4. Disable **PMS** (`NetWork.PMS.Enable=false` via DVRIP, see [cloud-cut.md](cloud-cut.md))
+   and block outbound traffic.
+5. Block TCP **12901** (vendor debug) at the router even on the LAN.
+6. If compromise is suspected: block WAN, reset credentials, remove the device from the
+   cloud account, and restore a known firmware/SPI dump.
 
 ## References
 
-- CVE-2026-79394 / CVE-2026-79396 — Xiongmai Sofia RTSP auth bypass / hard-coded
-  credentials (Aliyun AVD entries, 2026-09-12).
-- CVE-2025-65857 — XM530 `GetStreamUri` hard-coded RTSP credentials.
-- CVE-2018-17917 / CVE-2018-17919 — XMeye P2P cloud design issues.
-- CVE-2017-16725 — NetSurveillance web stack + 9530 telnet activation.
-- Vladislav Yarmak, "Backdoor in Xiongmai firmware" (2020), Censys/VulnCheck analyses.
+- NVD entries: CVE-2026-79393, CVE-2026-79394, CVE-2026-79395, CVE-2026-79396,
+  CVE-2026-34005, CVE-2025-65856, CVE-2025-65857, CVE-2024-3765, CVE-2020-22253,
+  CVE-2018-17915/17917/17919, CVE-2017-16725, CVE-2018-10088.
+- CISA ICSA-26-113-05 (XM530 IP camera, CVE-2025-65856).
+- Aliyun AVD / VulDB analyses for the 2026 Sofia CVEs.
+- Vladislav Yarmak, 2020 "backdoor in Xiongmai firmware" (9530) — not applicable here.

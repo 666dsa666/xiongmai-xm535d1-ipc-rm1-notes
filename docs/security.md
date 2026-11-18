@@ -8,6 +8,7 @@
 | ONVIF | 8899 | `GetSystemDateAndTime`/`GetProfiles` answer without auth |
 | Web UI | 80 | `admin` with empty password |
 | Xiongmai P2P | 34567 | cloud/app channel |
+| Vendor debug (`/usr/bin/debug`) | **12901** | RSA vendor handshake (backdoor; nobody else can log in) |
 
 The RTSP URL embeds the credentials in the path
 (`user=admin_password=<password>_channel=1_stream=0.sdp`), and with the factory default the password field
@@ -19,7 +20,7 @@ is empty. Anyone on the LAN can watch the stream.
 2. **Re-test RTSP** — the URL must then carry the password:
    `rtsp://<ip>:554/user=admin_password=<password>_channel=1_stream=0.sdp?real_stream`
    ONVIF `GetStreamUri` will return the corresponding token.
-3. **Keep ports on the LAN**: 80, 554, 8899 and 34567 must never be forwarded from the internet.
+3. **Keep ports on the LAN**: 80, 554, 8899, 34567 and the vendor debug **12901** must never be forwarded from the internet.
 4. **Block WAN if you do not use the cloud app.** These Xiongmai firmwares normally keep streaming when
    the internet is unavailable; block the camera's outbound traffic at the router (or its MAC) and verify
    RTSP still works.
@@ -53,13 +54,16 @@ Re-tested on a stock unit with firmware `V5.01.R02.000A07F3.10010.346732.0000000
 | DVRIP (34567) login | `admin` + **blank** password accepted |
 | RTSP DESCRIBE with blank password in path | `200 OK` (streams HEVC) |
 | ONVIF `GetProfiles` / `GetStreamUri` on `:8899` without auth | answered; URI contains `password=tlJwpbo6` (hard-coded token) |
-| telnet 23 / 4321 | closed |
-| port 9530 (Xiongmai/HiSilicon "secret knock") | **closed** |
+| telnet 23 / 4321 / 9530 | **closed** |
+| vendor debug `/usr/bin/debug` | **12901 open**; RSA vendor handshake, not usable without the vendor private key |
+| DVRIP `OPTelnetControl` / `EnableKey` | **decoy**: any key accepted, no listener opened (see [telnet.md](telnet.md)) |
 | upgrade manifest | signed (`Mx8Q`), so the old unsigned telnet-opener upgrade is rejected |
 
-This matches the class of **CVE-2026-79394** (RTSP auth bypass),
+This matches the class of **CVE-2026-79394** (RTSP default auth),
+**CVE-2026-79395** (ONVIF WSSE empty-password bypass),
 **CVE-2026-79396** (hard-coded/default accounts) and **CVE-2025-65857**
-(ONVIF `GetStreamUri` hard-coded credential). See [cves.md](cves.md).
+(ONVIF `GetStreamUri` hard-coded credential); the same Sofia codebase is also affected by
+**CVE-2026-79393** (WS-Addressing heap overflow, unassessed here). See [cves.md](cves.md).
 
 **Consequence:** on a shared LAN, anyone can watch the streams, move the PTZ and read
 the configuration with no credentials at all. Treat the camera as untrusted until the

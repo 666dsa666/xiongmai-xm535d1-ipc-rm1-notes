@@ -7,7 +7,7 @@ Only needed if you decide to modify the camera. For normal local RTSP use (see
 
 | field | value |
 |---|---|
-| chip | Winbond **W25Q128** family (16 MB / 128 Mbit) |
+| chip | Fudan **FM25Q64A13** (64 Mbit = **8 MiB**) |
 | package | SOIC-8 |
 | contents | bootloader, kernel, rootfs, config |
 
@@ -28,7 +28,7 @@ safety net.
 
 4. Keep at least two copies off-device, with the SHA-256 recorded.
 
-Expected size: 16,777,216 bytes.
+Expected size: 8,388,608 bytes (8 MiB).
 
 ## UART
 
