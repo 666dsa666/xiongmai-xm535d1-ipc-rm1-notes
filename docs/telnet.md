@@ -56,6 +56,14 @@ nevertheless fully reversed (see below) because it documents the vendor key mate
   the only link to DVRIP `TelnetEnable` (which unlinks the former) /
   `TelnetDisEnable` (which creates it); the check happens **once at startup**. Create the
   marker (root/clip) to keep the vendor debug service disabled.
+- **remote start trigger (V5.01 and V5.07)**: it is **not** `TelnetEnable` that starts the
+  daemon — it is **`GetSaftyCode`**. Its success branch calls
+  `LibXmDvr_Debug_open()` (V5.01 `0x1a7ff4`, V5.07 `0x1bfc08`, instruction-identical), which
+  does `GetPidByName("debug")` and otherwise `system("debug&")`. So an authenticated DVRIP
+  client (`admin`/empty!) can spawn the vendor debug daemon remotely, provided the U-Boot
+  env has `telnetctrl=1` and neither marker exists. `TelnetEnable` only removes the marker
+  (`/mnt/mtd/Log/9530Disable`, JFFS2-persistent) so the *next* start is allowed. The daemon
+  itself still requires the vendor RSA handshake.
 - if enabled: `pthread_create(DebugProc_thrd)` binds **hard-coded port 12901**
   (`movw r0,#0x3265` at `0x14460`).
 - packet layer: receiver is silent, `recv(fd,buf,1024)`, processing starts once >95 bytes
@@ -86,7 +94,25 @@ nevertheless fully reversed (see below) because it documents the vendor key mate
 
 On the unit documented here **12901 is reachable** (the vendor debug service is running).
 It is a vendor backdoor, not a usable user shell; block it at the firewall if you do not
-need vendor support.
+need vendor support. Since `GetSaftyCode` can start it remotely (see above), the attack
+surface is remote even when the daemon is not already running.
+
+## V5.01 (exact unit build) confirmation
+
+`cam-v501` rebuilt the exact **V5.01.R02** image in QEMU (`stack/xm_fw/xm535d1_v501_shell.img`,
+sha256 `1833c2f5…`) and repeated the tests:
+
+- `EnableKey` is still **not validated** (one string/code xref at V5.01 `0x1a7834`: load →
+  `get` → `asString` → `unlink("/mnt/mtd/Log/9530Disable")` → `Ret=100`; no compare/hash);
+  all of empty / `"AAAA"` / file value / lower / MD5 / SHA256 / Code / SessionID give the
+  same `Ret:100`, delete the marker and open nothing.
+- handler addresses are V5.01 = V5.07 **minus `0x17C14`** (entry `0x1a7598` vs
+  `0x1bf1ac`), instruction-identical code;
+- `/var/T8aYMi2q` is **created at boot** (~20–22 s, without any DVRIP request), value
+  `C52DEAF11BBF968925BA13DEC6D88EB5` for this build, and `GetSaftyCode` only rewrites it
+  with the same deterministic value; it is a function of device identity, not the session;
+- `debug` is still the same binary (`c9f140e1…`), and `GetSaftyCode` is the remote trigger
+  for it; the daemon's own `telnetctrl` + marker gate applies at start.
 
 ## How to actually get a shell
 

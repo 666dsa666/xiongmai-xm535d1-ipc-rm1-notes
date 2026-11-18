@@ -28,7 +28,10 @@ unit** from what is **assumed from the shared codebase**.
 ## Non-CVE finding: vendor debug service on 12901
 
 On the documented unit, **TCP 12901 is open** — `/usr/bin/debug`, started by `dvrHelper`
-when the U-Boot env variable **`telnetctrl`** is set. Its protocol is protected by an
+when the U-Boot env variable **`telnetctrl`** is set. It can also be **started remotely**
+through DVRIP: the `GetSaftyCode` success path calls `LibXmDvr_Debug_open()` →
+`system("debug&")` (V5.01 `0x1a7ff4`); `TelnetEnable`/`TelnetDisEnable` only remove/create
+the `/mnt/mtd/Log/9530Disable` startup marker. Its protocol is protected by an
 **RSA signature check with the vendor's private key**; after a successful handshake it can
 `popen()` root commands. It is a vendor backdoor, not a user-accessible shell:
 block 12901 at the firewall/router, and never port-forward it. It can be disabled at boot
