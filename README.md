@@ -80,6 +80,7 @@ a persistent shell requires UART (auto root login on the board console) or an SP
 - [docs/firmware-v507.md](docs/firmware-v507.md) — **new**: V5.07.X02 package analysis (InstallDesc, partitions, PMS/cloud strings)
 - [docs/cves.md](docs/cves.md) — **new**: CVEs and validated weaknesses (RTSP/ONVIF auth, hard-coded creds, 9530)
 - [docs/cloud-cut.md](docs/cloud-cut.md) — **new**: how to go 100% local (WAN block, PMS disable, static IP caveats)
+- [docs/root.md](docs/root.md) — **new**: root/shell path matrix (UART, DVRIP telnet opener, unsigned upgrade, older firmware findings)
 - [docs/telnet.md](docs/telnet.md) — telnet attempts, gates, UART path
 - [docs/openipc.md](docs/openipc.md) — why OpenIPC has no video on XM535D1
 - [docs/security.md](docs/security.md) — default credentials, hardening
@@ -89,3 +90,4 @@ a persistent shell requires UART (auto root login on the board console) or an SP
 
 Notes on personally owned hardware. No vendor firmware is redistributed.
 Documentation CC BY 4.0, snippets MIT (see [`LICENSE`](LICENSE)).
+
