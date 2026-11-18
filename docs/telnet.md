@@ -43,8 +43,20 @@ nevertheless fully reversed (see below) because it documents the vendor key mate
 - main `0x115b8`; gate at `0x14d90` = `atoi(envgetvalue("telnetctrl"))` plus an obfuscated
   licence path under `/mnt/custom`. If disabled it prints
   `LIBDVR : Debug: is Disabled!` and exits.
+- **startup gate verified dynamically** (strace in `qemu-user` + gdb): the daemon also
+  exits when `/mnt/mtd/Log/9530Disable` **or** `/mnt/custom/9530Disable` exists. This is
+  the only link to DVRIP `TelnetEnable` (which unlinks the former) /
+  `TelnetDisEnable` (which creates it); the check happens **once at startup**. Create the
+  marker (root/clip) to keep the vendor debug service disabled.
 - if enabled: `pthread_create(DebugProc_thrd)` binds **hard-coded port 12901**
   (`movw r0,#0x3265` at `0x14460`).
+- packet layer: receiver is silent, `recv(fd,buf,1024)`, processing starts once >95 bytes
+  are buffered. **Header = 16 bytes**: `sum = buf[8..15]`, checked with
+  `XmDvr_RandNum_procString(buf,8,sum,0,1)` (`libXMcrypto` `0x210b4`), valid iff
+  `(v&0xffff)|(v>>16) == 0xffff`; otherwise `LIBDVR : Invalid nDatLen!` and the connection
+  closes. A five-stage handler table at `debug:0x3cf04` follows
+  (`0x14008` Debug_handleConnect, `0x13b04`, `0x13378`, `0x13020`, `0x12d14`); stage 0
+  does the random-token handshake, opens files and `calloc(0x122)`.
 - packet layer: 8-byte random token, 8-byte checksum, length consistency, CRC32; dispatch
   Open / Run / Check / Update / RS session; fields named DDD/CCC/MMM/OOO/EEE.
 - **authentication**: `RS` session performs an **RSA PKCS#1 signature verification**
@@ -55,9 +67,14 @@ nevertheless fully reversed (see below) because it documents the vendor key mate
   client-supplied command — root command execution, but behind the vendor key.
 - login record: `LibXmDvr_Debug_setDefaultPasswd` writes
   `/mnt/mtd/Log/ns` = `root:697SJ23Ru0j3M:0:0:root:/:/bin/sh` (DES crypt(3) hash,
-  salt `69`). The clear password is not stored in the firmware.
-- no `set_uboot_env` import: the 12901 protocol cannot enable itself or change
-  `telnetctrl`/`xmuart`.
+  salt `69`). The clear password is not stored in the firmware; the daemon **does not read
+  `ns` during a 12901 session** (dynamic trace), so it is a local passwd line, not the
+  12901 auth. The hash is not in a 15k XM/device wordlist nor in all numeric masks ≤8
+  digits — not a trivial factory default.
+- no `set_uboot_env` import **reachable** in the 12901 path: the protocol cannot enable
+  itself or change `telnetctrl`/`xmuart`; invalid frames close before stage 0. A single
+  connection can be used for a trivial DoS (resource exhaustion) but no RCE was reached
+  without a valid RSA session.
 
 On the unit documented here **12901 is reachable** (the vendor debug service is running).
 It is a vendor backdoor, not a usable user shell; block it at the firewall if you do not

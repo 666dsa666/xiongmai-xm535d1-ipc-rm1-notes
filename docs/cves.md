@@ -15,7 +15,7 @@ unit** from what is **assumed from the shared codebase**.
 | **CVE-2026-79395** | ONVIF `wsse:UsernameToken` auth bypass when the stored admin password is empty: `admin` + any password is accepted. | **Validated equivalent**: ONVIF `GetProfiles`/`GetStreamUri` work without a real credential; DVRIP login `admin`/empty succeeds. |
 | **CVE-2026-79394** | RTSP server ships with authentication disabled (`need_auth=0`): unauthenticated H.264/H.265 + G.711 stream. | **Partially applies**: a bare `DESCRIBE rtsp://<ip>:554/streamtype=0` returns **401**, but the default URL `…/user=admin_password=_channel=1_stream=0.sdp?real_stream` returns **200** and streams. In practice, anyone on the LAN can stream with the blank default password. |
 | **CVE-2026-79393** | Heap overflow in `Sofia` WS-Addressing `wsa5:Action` handling (>128 bytes) — remote unauth DoS / possible RCE. | **Family-wide, unassessed here**: our `Sofia` is a 2025 build of the same codebase; no crash tests run (would disrupt the live unit). |
-| **CVE-2026-34005** | Root command injection via `HostName` shell metacharacters in an **authenticated DVRIP** request (Sofia DVR/NVR 4.03.R11). | **Unknown / worth testing**: DVRIP `admin`/empty authenticates, and the XM535D1 uses the same Sofia family. Test in the QEMU emulator before trying on hardware. |
+| **CVE-2026-34005** | Root command injection via `HostName` shell metacharacters in an **authenticated DVRIP** request (Sofia DVR/NVR 4.03.R11). | **Not reproduced on this IPC in QEMU**: setting `NetWork.NetCommon.HostName` (and `General.General.MachineName`) to `;id>/tmp/x`, `$(…)`, backticks or newline payloads returns `Ret=100` and stores the value literally, but **no command runs** (no marker file). Likely DVR/NVR-only code path. |
 | **CVE-2025-65856** | Authentication bypass on XM530 `V5.00.R02.000807D8…ONVIF 21.06`: unauthenticated device info + live video. | **Likely inherited**: unauth `GetProfiles`/`GetStreamUri` on `:8899` works on this unit (newer V5.07 build, same lineage). |
 | **CVE-2025-65857** | `GetStreamUri` returns an RTSP URI with a **hard-coded credential**. | **Validated**: unauthenticated ONVIF `GetStreamUri` returns `rtsp://…user=admin_password=tlJwpbo6…`. |
 | **CVE-2024-3765** | Critical vulnerability in XM530 `R80X30-PQ_8M` (details withheld in NVD). | **Unassessed**; same SoC family. |
@@ -31,7 +31,9 @@ On the documented unit, **TCP 12901 is open** — `/usr/bin/debug`, started by `
 when the U-Boot env variable **`telnetctrl`** is set. Its protocol is protected by an
 **RSA signature check with the vendor's private key**; after a successful handshake it can
 `popen()` root commands. It is a vendor backdoor, not a user-accessible shell:
-block 12901 at the firewall/router, and never port-forward it. Details:
+block 12901 at the firewall/router, and never port-forward it. It can be disabled at boot
+by creating `/mnt/mtd/Log/9530Disable` (or `/mnt/custom/9530Disable`) — the daemon exits
+with `LIBDVR : Debug: is Disabled!` when either marker exists. Details:
 [telnet.md](telnet.md).
 
 ## Practical exposure of a stock unit
