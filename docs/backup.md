@@ -36,6 +36,10 @@ The board has several unpopulated headers (motor, speaker, IR), and the UART pad
 on this revision yet. If you go looking:
 
 - typical Xiongmai XM535 boards run U-Boot at **115200 8N1**;
+- newer U-Boot builds ask for a **password** after `Ctrl+C`. For this bootloader
+  family the known OEM defaults are **`#Ux6@9V&4_Rz`** (most likely) and `ubootpwd`
+  (OpenIPC firmware issue #1892; same `XM535D1` CPU). Not yet verified on this unit
+  because the UART pads are not identified;
 - look for a 3- or 4-pad group near the SoC, often labelled `TX`/`RX`/`GND`;
 - adapter `TXD` → board `RX`, adapter `RXI` → board `TX`, common `GND`; do not feed 3V3/5V;
 - capture the boot log before touching anything.

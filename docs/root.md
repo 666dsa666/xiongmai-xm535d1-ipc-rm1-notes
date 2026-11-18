@@ -111,3 +111,30 @@ vendor's `EnableKey` gate was removed/ignored in V5.01/V5.07, but the only servi
 would have enabled is the RSA-protected vendor debug channel. Root therefore still needs
 **UART** (auto-login in `/etc/inittab`) or a **full 8 MiB SPI dump + offline rootfs patch**.
 Details and emulator reproduction: [telnet.md](telnet.md), [emulation.md](emulation.md).
+
+## U-Boot password and firmware archive (OpenIPC issue #1892)
+
+The same `XM535D1` CPU / U-Boot family appears in OpenIPC firmware issue **#1892**
+("Clarification on how to downgrade XM530 Firmware needed"). Useful findings there:
+
+- the bootloader is password-protected on recent builds, but the **known OEM default**
+  is **`#Ux6@9V&4_Rz`** (fallback `ubootpwd`). Typing it at the `Password:` prompt is
+  risk-free. This is only reachable with **UART** access; we have not identified the UART
+  pads on this board revision yet, and the password was not verified in the QEMU
+  stand-in (Ctrl+C does not reliably stop this emulated U-Boot).
+- OpenIPC mirrors XM stock packages at **`OpenIPC/xmupdates`** (`firmware-archive`
+  release, `archive/index.json`). For our device `000A07F3`/X6E-WEQ there is exactly
+  **one** archived revision, and it is the same file we have: the package is labelled
+  `V5.00.R02` but the inner update binary is **`V5.07.X02` (2025-09-06,
+  sha256 f9ed99f3…)`. There is therefore **no older X6E-WEQ firmware publicly
+  archived** to downgrade to. Other XM535D1 variants also have only one recent revision.
+- the issue's downgrade advice ("old XM530 image reflashes U-Boot and removes the
+  password") applies to the XM530 archive (58 builds), **not** to the XM535D1/X6E-WEQ.
+  Flashing another model's package is unsafe: `Hardware`/`DevID` mismatch is at best
+  rejected, at worst bricks the unit.
+- OpenIPC `xm530_lite` boots on this SoC but has **no video backend** and the X6E-WEQ is
+  a multi-sensor module, so it is not a practical replacement (see `openipc.md`).
+
+**Bottom line:** the known U-Boot password is a useful future asset once UART is found,
+but it does not create a path on this unit today. The SPI clip / full dump remains the
+primary route.
