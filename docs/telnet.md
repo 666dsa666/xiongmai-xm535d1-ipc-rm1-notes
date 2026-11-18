@@ -1,7 +1,14 @@
 # Telnet / debug shell — what exists and what the reverse engineering proved
 
-Tested on `IPC-RM1-BLK535-2M6P V1.03`, XM535D1, stock `V5.01.R02.000A07F3…` and the
-official `V5.07.X02` (2025-09-06) image (also reproduced in the `xm535` QEMU machine).
+> **Which firmware was analysed?**
+> The **real unit** runs stock `V5.01.R02.000A07F3.10010.346732.0000000`
+> (build 2024-09-14). The **QEMU image** used for the deep reverse engineering is
+> rebuilt from the official **`V5.07.X02`** package (2025-09-06), because no flash dump of
+> the unit was available. Real-camera checks below are on V5.01; the code addresses,
+> `EnableKey` decoy, safety-code formula and 12901 protocol are from **V5.07** and must be
+> re-validated on a V5.01 dump once one is taken.
+
+Tested on `IPC-RM1-BLK535-2M6P V1.03`, XM535D1; see the note above for versions.
 
 ## TL;DR
 
