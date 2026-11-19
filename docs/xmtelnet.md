@@ -38,9 +38,11 @@ Checked on the actual firmware and in QEMU:
   **TCP RST**;
 - `TelnetDebugOpen*` returns `Ret 103`; `TelnetEnable` returns `Ret 100` but only
   unlinks the marker (the `EnableKey` value is dead code);
-- the only remote artefact is DVRIP `GetSaftyCode` → starts `/usr/bin/debug` on **12901**,
-  which requires a **vendor RSA signature**. Root access does not help: the firmware
-  contains only the **public** key (`TelPubBase`), no private key/certificate.
+- the only remote artefact is DVRIP `GetSaftyCode` → starts `/usr/bin/debug` on **12901**;
+  that service has a client-selectable auth downgrade (weak VSC mode) and a pre-auth heap
+  overflow, but its post-auth `Run` command is the fixed literal `timetest`, so there is no
+  arbitrary root command. See [debug-12901.md](debug-12901.md); no vendor private key is
+  present in the firmware in any case.
 
 ⇒ do **not** buy/use XMTelnet for this camera; there is no telnetd to enable.
 

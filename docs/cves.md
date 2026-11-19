@@ -31,9 +31,13 @@ On the documented unit, **TCP 12901 is open** — `/usr/bin/debug`, started by `
 when the U-Boot env variable **`telnetctrl`** is set. It can also be **started remotely**
 through DVRIP: the `GetSaftyCode` success path calls `LibXmDvr_Debug_open()` →
 `system("debug&")` (V5.01 `0x1a7ff4`); `TelnetEnable`/`TelnetDisEnable` only remove/create
-the `/mnt/mtd/Log/9530Disable` startup marker. Its protocol is protected by an
-**RSA signature check with the vendor's private key**; after a successful handshake it can
-`popen()` root commands. It is a vendor backdoor, not a user-accessible shell:
+the `/mnt/mtd/Log/9530Disable` startup marker. `/usr/bin/debug` on 12901 has a **client-selectable auth downgrade**: a short field uses a
+weak, offline-computable safety code (VSC) and bypasses the vendor RSA check; a long field
+uses the real RSA signature check (RSV). The post-auth `Run` command is the fixed literal
+`timetest` (not a shell), and a **pre-auth heap overflow** exists in the `Update` stage
+(up to 225 bytes). There is no ready-made root primitive in this service, but it is a
+network attack surface and an RCE research target. Details:
+[debug-12901.md](debug-12901.md). It is a vendor backdoor, not a user-accessible shell:
 block 12901 at the firewall/router, and never port-forward it. It can be disabled at boot
 by creating `/mnt/mtd/Log/9530Disable` (or `/mnt/custom/9530Disable`) — the daemon exits
 with `LIBDVR : Debug: is Disabled!` when either marker exists. Details:

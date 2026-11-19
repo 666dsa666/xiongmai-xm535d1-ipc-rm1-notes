@@ -17,11 +17,15 @@ Tested on `IPC-RM1-BLK535-2M6P V1.03`, XM535D1; see the note above for versions.
 - DVRIP message **2040** / `OPTelnetControl` is a **decoy**: `EnableKey` is *not* validated;
   it only deletes `/mnt/mtd/Log/9530Disable` and answers `Ret=100`. It opens nothing.
 - The real debug service is **`/usr/bin/debug` on TCP 12901**, enabled by the U-Boot env
-  variable **`telnetctrl`**. It is a **vendor-only** binary protocol protected by an
-  **RSA signature** (the device holds only the public key). After a successful handshake
-  it can popen() root commands — but that requires the vendor RSA private key.
-- **Conclusion: there is no network-only root/telnet path on this firmware.** Use the UART
-  console (auto root login) or a full SPI dump and offline rootfs patch.
+  variable **`telnetctrl`**. It is a binary protocol with **two client-selectable auth
+  modes**: a real vendor-RSA signature check, or a weak safety-code check (VSC) derived
+  from `/var/T8aYMi2q` and offline-computable. A client can choose VSC and **bypass the
+  vendor key**. However the post-auth `Run` command is the fixed literal `timetest`, not a
+  root shell; the serious bug is a **pre-auth heap overflow** in `Update`.
+  See [debug-12901.md](debug-12901.md).
+- **Conclusion: 12901 is not a ready-made network root.** Root on this camera is best
+  obtained through the unsigned-upgrade path; 12901 remains a network attack surface and
+  should stay disabled/firewalled.
 
 ## DVRIP OP 2040 — `OnTelnetControl`
 
@@ -75,12 +79,16 @@ nevertheless fully reversed (see below) because it documents the vendor key mate
   does the random-token handshake, opens files and `calloc(0x122)`.
 - packet layer: 8-byte random token, 8-byte checksum, length consistency, CRC32; dispatch
   Open / Run / Check / Update / RS session; fields named DDD/CCC/MMM/OOO/EEE.
-- **authentication**: `RS` session performs an **RSA PKCS#1 signature verification**
-  (`Debug RSV: V OK/V Failed`) against the public key in `/mnt/mtd/Log/TelPubBase`
-  (fallback `/usr/bin/Squirrel/rs485/TelPubBase`). The device stores **only the public
-  key**, so a client must hold the vendor's RSA private key.
-- after authentication, the `Run` handler at `0x12c80` calls `popen(cmd,"r")` on the
-  client-supplied command — root command execution, but behind the vendor key.
+- **authentication**: `RS` session has **two client-selectable modes**: a short field
+  takes the **VSC** safety-code path (`/var/T8aYMi2q`, 10 decimal digits, offline-
+  computable); a long field takes the real **RSV** RSA PKCS#1 signature check against the
+  public key in `/mnt/mtd/Log/TelPubBase` (fallback `/usr/bin/Squirrel/rs485/TelPubBase`).
+  The RSA check is genuine but **optional**, so no vendor private key is needed to drive
+  the service.
+- after authentication, the `Run` handler calls `popen("timetest","r")` — a **fixed
+  literal**, not a client-supplied command. `timetest` is not present in the firmware, so
+  there is no arbitrary root command execution. The real bug is the pre-auth `Update`
+  heap overflow (up to 225 bytes) described in [debug-12901.md](debug-12901.md).
 - login record: `LibXmDvr_Debug_setDefaultPasswd` writes
   `/mnt/mtd/Log/ns` = `root:697SJ23Ru0j3M:0:0:root:/:/bin/sh` (DES crypt(3) hash,
   salt `69`). The clear password is not stored in the firmware; the daemon **does not read
@@ -89,8 +97,9 @@ nevertheless fully reversed (see below) because it documents the vendor key mate
   digits — not a trivial factory default.
 - no `set_uboot_env` import **reachable** in the 12901 path: the protocol cannot enable
   itself or change `telnetctrl`/`xmuart`; invalid frames close before stage 0. A single
-  connection can be used for a trivial DoS (resource exhaustion) but no RCE was reached
-  without a valid RSA session.
+  connection can be used for a trivial DoS (resource exhaustion); the pre-auth heap
+  overflow is the only memory-corruption candidate found, and no weaponised exploit has
+  been demonstrated.
 
 On the unit documented here **12901 is reachable** (the vendor debug service is running).
 It is a vendor backdoor, not a usable user shell; block it at the firewall if you do not

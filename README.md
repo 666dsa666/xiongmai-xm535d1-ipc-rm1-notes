@@ -113,6 +113,7 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 - [docs/production-firmware-v507.md](docs/production-firmware-v507.md) — **new**: V5.07 production SSH image (key-only 2222, hardened), QEMU validation and hardware-pending notes
 - [docs/ota.md](docs/ota.md) — **new**: what the cloud app offers (V5.07.X02, same package we already have), OTA endpoint and why not to update if root is wanted
 - [docs/xmtelnet.md](docs/xmtelnet.md) — **new**: what XMTelnet really is (paid exploit + offline licence), and why the 9530/telnetd path is absent on this model
+- [docs/debug-12901.md](docs/debug-12901.md) — **new**: 12901 auth downgrade (VSC vs RSA), fixed `timetest` command, pre-auth heap overflow; why it is not a root shell
 - [docs/return-to-stock.md](docs/return-to-stock.md) — **new**: official-flash restore vs factory config reset; voice prompts and recovery
 - [docs/telnet.md](docs/telnet.md) — **rewritten**: EnableKey decoy, safety-code reverse, 12901 vendor debug, UART path
 - [docs/emulation.md](docs/emulation.md) — **new**: rebuild the official 8 MiB image and boot it in qemu-bench `xm535`
