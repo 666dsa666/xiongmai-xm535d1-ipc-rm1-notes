@@ -68,7 +68,8 @@ V5.07 proxy. The exact V5.01 image is available for that in the analysis workspa
 > `user` partition gave a persistent root shell after reboot. See
 > [upgrade-root.md](upgrade-root.md). The `Mx8Q` signature is **not enforced on V5.01**,
 > contrary to the earlier assumption on this page; V5.04/V5.07 metadata checks still need
-> separate testing.
+> separate testing. The cloud app currently offers **V5.07.X02** (same package as the
+> vendor portal) — see [ota.md](ota.md).
 
 ## How to update
 

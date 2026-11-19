@@ -153,7 +153,9 @@ final time**; SSH survived each reboot.
 - The baked host key is shared if the same package is deployed to several cameras;
   generate a per-camera host key.
 - No SPI dump yet; recovery currently depends on DVRIP/web.
-- Voice prompts were removed from `/usr`; restore the official package if needed.
+- Vendor voice prompts were removed from `/usr` to fit the partition; **flashing the
+  official package restores them automatically**, a config reset does not. Restore the
+  official package if they are needed (see [return-to-stock.md](return-to-stock.md)).
 - The HTTP bridge code remains (password-gated); do not expose port 80.
 - Not tested on V5.04/V5.07; this package targets V5.01.
 
@@ -162,4 +164,6 @@ final time**; SSH survived each reboot.
 - [upgrade-root.md](upgrade-root.md) — unsigned-upgrade root mechanism and lab package
 - [hardening.md](hardening.md) — hardening steps (this production image applies them)
 - [security.md](security.md) — exposure model
+- [ota.md](ota.md) — cloud update offers V5.07.X02; why to stay on V5.01 for root
+- [return-to-stock.md](return-to-stock.md) — undo the production image / factory reset
 - [backup.md](backup.md) — SPI dump
