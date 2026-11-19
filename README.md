@@ -97,6 +97,7 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 - [docs/cloud-cut.md](docs/cloud-cut.md) — **new**: how to go 100% local (WAN block, PMS disable, static IP caveats)
 - [docs/root.md](docs/root.md) — **new**: root/shell path matrix and the definitive telnet verdict
 - [docs/upgrade-root.md](docs/upgrade-root.md) — **new**: confirmed root via the unsigned V5.01 upgrade (Shell command / custom `user` partition, real-hardware evidence, procedure, risks)
+- [docs/hardening.md](docs/hardening.md) — **new**: hardening a rooted camera (admin password, extra accounts, ONVIF/RTSP/snapshot auth, cloud/PMS/NAT/online-upgrade off, 9530Disable, firewall)
 - [docs/telnet.md](docs/telnet.md) — **rewritten**: EnableKey decoy, safety-code reverse, 12901 vendor debug, UART path
 - [docs/emulation.md](docs/emulation.md) — **new**: rebuild the official 8 MiB image and boot it in qemu-bench `xm535`
 - [docs/openipc.md](docs/openipc.md) — why OpenIPC has no video on XM535D1

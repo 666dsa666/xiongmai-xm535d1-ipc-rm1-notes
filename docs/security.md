@@ -25,6 +25,9 @@ is empty. Anyone on the LAN can watch the stream.
    the internet is unavailable; block the camera's outbound traffic at the router (or its MAC) and verify
    RTSP still works.
 5. If you do not use the mobile app at all, consider blocking 34567 outbound too — that is the P2P channel.
+6. If the camera is rooted (see [upgrade-root.md](upgrade-root.md)), the full validated
+   hardening recipe — extra-account removal, ONVIF password checkout, PMS/NAT/online
+   upgrade off, `9530Disable`, firewall — is in [hardening.md](hardening.md).
 
 ## Notes
 
