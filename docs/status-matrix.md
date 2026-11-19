@@ -1,106 +1,105 @@
-# Status matrix — what is validated, what is not, what remains
+# Status matrix — verified / to verify / abandoned
 
-Last updated: 2026-11-19. Scope: XM535D1 / X6E-WEQ, `IPC-RM1-BLK535-2M6P V1.03`,
-8 MiB FM25Q64.
+Last updated: 2026-11-19. XM535D1 / X6E-WEQ, `IPC-RM1-BLK535-2M6P V1.03`, 8 MiB FM25Q64.
 
-Legend: **HW** = validated on a physical camera; **QEMU** = validated on the exact
-firmware image under `qemu-bench`; **NO** = tested and failed/not applicable;
-**PENDING** = not finished / not tested.
+Legend: **HW** = validated on physical hardware; **QEMU** = validated on the exact
+firmware image under `qemu-bench`; **NO** = failed / not applicable.
 
-## Cameras
+## Current camera state
 
-| Camera | Current state | Notes |
+| Camera | State | Role |
 |---|---|---|
-| `.153` (camera 1) | **stock V5.01**, cloud/PMS as vendor | reference; never flashed; 12901 open on stock config |
-| `.161` (camera 2) | **stock V5.01 with hardened config**, no SSH/root (2222/2323 closed) | used for every hardware test; was V5.07 production during the round-trip, then downgraded to V5.01 official |
-| camera 3 | **new in box**, not connected | intended as SPI-dump/recovery reference and optional boot-media test |
+| `.153` | stock V5.01, cloud/PMS as vendor | reference; never flashed |
+| `.161` | stock V5.01 **with hardened config**, no SSH/root (2222/2323 closed) | hardware test unit |
+| camera 3 | new in box, not connected | SPI dump/recovery reference |
 
-- SPI clip: **not available yet** (expected in a few days).
-- No verified SPI dump of any camera yet. Camera 2 has an **old 8 MiB dump of a custom
-  state** (pre-factory-reset), useful as a fallback but not a stock reference.
-- `.161` current config: admin password set, only `admin`, PMS/NAT/OnlineUpgrade/NTP off,
-  ONVIF/RTSP/snapshot auth on, no SSH/root.
+- SPI clip: **not available yet**; no verified SPI dump of any camera.
+- `.161` was taken through V5.01 stock → V5.07 production SSH → V5.01 official downgrade;
+  it is currently stock V5.01 with hardened config.
 
-## Firmware
+---
 
-| Version | Package / status | QEMU | HW | Notes |
-|---|---|---|---|---|
-| V5.00.R02 (2024-04-18) | archived | booted | NO | no access advantage |
-| V5.01.R02 (2024-09-14) | **exact unit build** | booted | **YES** | root via unsigned upgrade; production SSH validated on HW |
-| V5.02.R02 | archived | booted | NO | intermediate — not pursued |
-| V5.04.R02 | archived | booted | NO | intermediate — not pursued |
-| V5.07.X02 (2025-09-06) | latest official | booted | **YES** | unsigned upgrade accepted; production SSH validated on HW; downgrade to V5.01 validated on HW |
+## ✅ Verified — real hardware
 
-- `debug` binary (12901) is byte-identical V5.00–V5.07.
-- Voice prompts are in the `user` (`/usr/share/music`) partition; removed in production
-  images; restored by official firmware flash, **not** by a config reset.
+| Item | Evidence / detail |
+|---|---|
+| **V5.01 unsigned-upgrade root** | custom `user`/`Shell` package accepted (`Ret 515`); root shell; production SSH 2222; hardware-validated on `.161` |
+| **V5.07 unsigned-upgrade root** | V5.07 package accepted (`Ret 515`); V5.07.X02; production SSH 2222; hardware-validated |
+| **V5.01 → V5.07 → V5.01 round-trip** | `Ret 515` both directions; version changes confirmed; config preserved |
+| **Production SSH (V5.01 and V5.07)** | key-only root on 2222, no 2323/12901/9530; persists after reboot |
+| **Hardening** | admin only/strong password; PMS/NAT/OnlineUpgrade/NTP off; `DisableXmServerConn`; `OnvifPwdCheckout`; `9530Disable` |
+| **Auth behaviour after hardening** | RTSP blank 401 / new 200; ONVIF media+device 401; snapshot 401; HTTP bridge wrong password 203 |
+| **Official firmware restore / downgrade** | official V5.01/V5.07 package `Ret 515`; SSH/root removed; config kept |
+| **Config preservation across upgrade/downgrade/reboot** | hardened fields re-read after each reboot |
+| **HTTP bridge + ConfigExport on stock** | admin+empty full admin; config ZIP with accounts/PSK (observed before hardening) |
+| **No telnetd / no 9530 subsystem** | `find / -iname '*telnet*'` empty, no listener; checked on real rooted V5.01 |
+| **OTA version/URL** | camera stored `V5.07.X02` URL in `/mnt/mtd/Log/ota_info.txt`; app offered same build |
+| **Windows SSH client key ACL** | `icacls /inheritance:r` + owner grant required; client-side only |
 
-## Root / access methods
-
-| Method | QEMU | HW | Verdict |
-|---|---|---|---|
-| **Unsigned upgrade, V5.01** — `Shell` command / custom `user` | YES | **YES** | root command as root; persistent 2323; production SSH 2222 |
-| **Unsigned upgrade, V5.07** — no CRC/Mx8Q enforcement | YES | **YES** | V5.07 production SSH 2222 validated on HW; `Ret 515` |
-| Upgrade **without burning `user`** (V5.07 kernel + V5.01 rooted `/usr`) | YES | NO | **abandoned** — root preserved but V5.01 modules/ISP mismatch the V5.07 kernel; not needed since V5.01 and V5.07 both have direct root entry points |
-| **Downgrade V5.07 → V5.01** official | YES | **YES** | `Ret 515`, V5.01 restored; config preserved |
-| **Boot-media root V5.07** — ConfigImport writes mtd5 cramfs `/init` + mtd0 U-Boot/env | YES | **NO** | network-only persistent root on 2323; destructive to mtd0/mtd5; QEMU V5.07 only — the same `ConfigImport`/layout exists on V5.00–V5.04/V5.01, so it is *likely* portable, but untested |
-| `ConfigImport` msg 1540 traversal — root file/block-device write | YES | NO | root write, config/boot tampering, brick risk |
-| HTTP legacy bridge admin bypass / ConfigExport | YES | **YES** (on stock) | full admin + credential/PSK leak when password empty |
-| 12901 auth downgrade (VSC vs RSA) | YES | NO (binary identical) | no vendor key needed to drive the service; no root shell by itself |
-| 12901 pre-auth heap overflow (225 B) | YES | NO | **DoS confirmed**; control-flow influence but no reliable RCE |
-| 12901 `popen("timetest")` fixed command | YES | NO | PATH hijack **fails**: RO PATH + busybox applet already running root on TCP 50119; ZIP strips exec bit |
-| 12901 follow-up: busybox `timetest` on 50119 | NO | NO | new root-service lead, not yet audited |
-| XMTelnet / 9530 secret knock | NO | NO | absent telnetd/9530; paid exploit + offline licence; not applicable |
-| UART console / SPI flash | NO | NO | physical fallback; UART pads not identified; clip pending |
-| Vendor RSA private key | NO | NO | not present in firmware; not needed for VSC path anyway |
-
-## Production / hardening
-
-| Item | QEMU | HW | Notes |
-|---|---|---|---|
-| **V5.01 production SSH** (`v501_prod_ssh.bin`) | YES | **YES** | SSH key-only 2222, no 2323; cloud off; HW-validated, then camera later reset/downgraded |
-| **V5.07 production SSH** (`v507_prod_ssh.bin`) | YES | **YES** | V5.07 + SSH 2222; HW round-trip validated; package ready |
-| Admin password change / user cleanup | YES | **YES** | admin only; strong password |
-| ONVIF/RTSP/snapshot auth | YES | **YES** | ONVIF 401, RTSP blank 401 / new 200, snapshot 401 |
-| PMS/NAT/OnlineUpgrade/NTP off, `DisableXmServerConn`, `OnvifPwdCheckout` | YES | **YES** | survives reboot and upgrade/downgrade |
-| `9530Disable` marker | YES | **YES** | 12901/9530 closed |
-| Windows SSH key ACL | — | **YES** | needed `icacls /inheritance:r`; client-side only |
-| Factory return / downgrade | YES | **YES** | official V5.01/V5.07 packages `Ret 515`; config preserved |
-
-## OTA / cloud
+## ✅ Verified — QEMU only
 
 | Item | Result |
 |---|---|
-| Android app update prompt | generic dialog, **no version shown**; camera stores URL in `/mnt/mtd/Log/ota_info.txt` |
-| Offered version | **V5.07.X02** (2025-09-06) — already owned (`f9ed99f3…`) |
-| OTA endpoint | `https://upgrade.secu100.net:9083/download?...` |
-| V5.01 → V5.07 root | possible with the unsigned package; **HW-validated** |
-| Latest V5.07 root | possible; production SSH validated; downgrade validated |
+| V5.00/V5.02/V5.04 boots and baseline | booted; no hardware test; intermediate versions abandoned as root targets |
+| **Boot-media root on stock V5.07** | ConfigImport → `mtd5` cramfs `/init` + `mtd0` U-Boot/env; persistent root console 2323; arbitrary ARM exec; **no hardware test** |
+| **ConfigImport msg 1540 traversal** | root file/block-device write; `mtd0`/`mtd1`/`mtd5` writable; brick risk |
+| **V5.07 no CRC/Mx8Q enforcement** | flags 0, setters uncalled, `VerifyMx8QSign` unreachable; `Ret 515` with modified `user` |
+| **Upgrade without burning `user`** | root preserved, but V5.01 userspace with V5.07 kernel → modules/ISP mismatch; **abandoned** |
+| **12901 auth downgrade (VSC vs RSA)** | short-field VSC path, safety code offline-computable; full 0→4 walk; no vendor key |
+| **12901 heap overflow** | clean pre-auth DoS (zero-N MPI SIGSEGV); long-E heap corruption with PC/LR influence; no reliable RCE |
+| **12901 PATH hijack** | failed: RO PATH, `timetest` is a busybox applet already running root on **50119**, ZIP drops exec bit |
+| **`core_pattern`/`hotplug` helper** | writable but no core dumps / no exec bit → fails |
+| **XMTelnet model** | paid exploit + offline licence; 9530 subsystem absent → not applicable |
+| **Signed-upgrade assumptions** | V5.01/V5.07 accept modified packages despite `Mx8Q`; documented |
 
-## Remaining decisions / tasks
+---
 
-1. **Final state of `.161`**: choose V5.07 production SSH (recommended), V5.01 production
-   SSH, or keep stock V5.01 hardened.
-2. **When the clip arrives**: dump camera 3 (new) ×2, verify; ideally dump `.161` and
-   `.153` too; store two copies. Optionally build/verify a factory recovery image from the
-   official packages (not a substitute for a target dump).
-3. **Optional**: hardware-validate boot-media root on camera 3 **after** a dump; it is
-   destructive and QEMU-only today.
-4. **Optional**: finish the new lead on the **busybox `timetest` root service on TCP 50119**
-   (QEMU only; no documentation yet); 12901 itself is settled — no root primitive.
-5. **`.153`**: keep stock or choose a later production/hardening step.
-6. Rotate the Wi-Fi PSK that was exposed by `ConfigExport` before hardening.
-7. Re-apply the chosen production image to `.161` and update docs/backup with the final
-   state.
+## 🟡 To verify / pending
+
+| Item | Why / next step |
+|---|---|
+| **SPI dump ×2 of camera 3** | clip pending; verify hashes, store two copies |
+| **SPI dump of `.161` / `.153`** | target-specific backup; preferable before any future flash |
+| **SPI restore test on a sacrificial camera** | validate the recovery procedure, not just the theory |
+| **Boot-media root on real hardware** | QEMU-proven only; destructive to `mtd0`/`mtd5`; needs dump/recovery |
+| **Boot-media root portability to V5.00–V5.04/V5.01** | same ConfigImport/layout; untested |
+| **`timetest` busybox service on TCP 50119** | new root-service lead; no protocol audit yet |
+| **Factory recovery image from official packages** | can be generated (not a target dump); test in QEMU/SPI |
+| **Voice prompts after official flash** | expected restored (whole `user` partition); not explicitly re-checked on HW |
+| **Camera 3 version/behaviour** | new in box; unknown V5.01/V5.07 status |
+| **Final state of `.161`** | choose V5.07 production SSH (recommended), V5.01 production SSH, or stock |
+| **`.153` decision** | keep stock or later production/hardening |
+| **Rotate exposed Wi-Fi PSK** | `ConfigExport` exposed it before hardening; user action |
+| **CVE-2026-79393 / other family CVEs** | not assessed; could be tested on QEMU/spare |
+| **12901 heap RCE** | optional research; DoS confirmed, no weaponised exploit |
+
+---
+
+## ❌ Abandoned / excluded
+
+| Item | Reason |
+|---|---|
+| **V5.00/V5.02/V5.04 as root targets** | intermediate; same runtime/upgrade weaknesses; someone on them can move to V5.01/V5.07 |
+| **Upgrade without burning `user`** | incompatible modules/userspace; not needed |
+| **XMTelnet / 9530 secret knock** | no telnetd/9530 in this firmware; paid exploit + offline licence |
+| **Vendor RSA private-key search** | not present in firmware; not needed for the VSC path anyway |
+| **12901 as a root path** | auth bypass + heap DoS only; no arbitrary command (`timetest` fixed) |
+| **12901 PATH hijack / core_pattern / hotplug** | all measured blocked (RO PATH, exec bit, RLIMIT_CORE=0) |
+| **UART pad investigation** | stopped earlier; SPI is the chosen physical path (could revisit) |
+| **OpenIPC replacement** | no video backend for XM535D1 |
+| **CVE-2026-34005 HostName injection** | negative on this IPC (dead code/no caller) |
+| **Intermediate downgrade as a root route** | no access advantage; V5.01/V5.07 already rooted |
+
+---
 
 ## Artifacts
 
 - Packages: `stack/xm_fw/upg/v501_prod_ssh.bin`, `v507_prod_ssh.bin`,
-  `v501_official.bin`, `v501_persist2_user.bin`, V5.07 rooted variants.
+  `v501_official.bin`, `v501_persist2_user.bin`.
 - Keys/passwords: `stack/analysis/access/cam2-production/`,
   `stack/analysis/access/v507-production/` (sensitive; not in git).
 - Backup: `stack/backups/2026-11-19/` (packages, credentials, reports, flash dump,
   docs snapshot, SHA256SUMS).
-- Docs: <https://github.com/666dsa666/xiongmai-xm535d1-ipc-rm1-notes>
-  (upgrade-root, upgrade-root-v507, production-firmware, production-firmware-v507,
+- Public docs: <https://github.com/666dsa666/xiongmai-xm535d1-ipc-rm1-notes>
+  (status, upgrade-root, upgrade-root-v507, production-firmware, production-firmware-v507,
   boot-media-root-v507, debug-12901, xmtelnet, ota, return-to-stock).
