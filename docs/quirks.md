@@ -27,8 +27,12 @@ Other time facts:
 - DVRIP `OPTimeSetting` (1450) on V5.07 applies the +1 h timezone twice → clock 1 h slow;
   prefer ONVIF.
 - `NetNTP.TimeZone` is an index in `[0,33]`; `System.TimeZone.timeMin` is a separate field
-  (`-60` here). The ONVIF timezone string was `CET-1CEST`. Do not deduce the wall clock from
+  (was `-60` here). The ONVIF timezone string was `CET-1CEST`. Do not deduce the wall clock from
   these alone.
+- **Recording clock can be shifted by `System.TimeZone.timeMin` while live/OPTimeQuery is
+  correct.** With `timeMin=-60`, new recordings were stamped +1 h (e.g. file at 01:20 while
+  camera/OPTimeQuery said 00:20). Setting `timeMin=0` fixed new files; files already written keep
+  their bad timestamps until deleted or the card is formatted.
 - Public NTP works with `time.cloudflare.com` / `0.fr.pool.ntp.org`; allow **UDP 123 out** only.
 
 ## 2. Storage: WFS has no DOS partition table
@@ -119,3 +123,4 @@ Other time facts:
   absence of `mmcblk0p1` after that is normal WFS behaviour.
 - The 64 GB card is usable; a card that does not initialise may be incompatible/worn, not
   necessarily a firmware bug.
+
