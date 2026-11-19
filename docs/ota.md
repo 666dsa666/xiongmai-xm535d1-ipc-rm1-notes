@@ -40,17 +40,22 @@ download is done by the camera, not by the phone.
 
 ## Why you should NOT update if you want to keep root
 
-The V5.04/V5.07 upgrade verifier is stricter (CRC/metadata checks;
-`CUpgrader::doMetadataCheck`). The confirmed unsigned-upgrade root path
-([upgrade-root.md](upgrade-root.md)) targets V5.01 and is **not expected to survive**
-V5.07. In addition, a V5.07 update may make downgrade/recovery harder without an SPI dump.
+The V5.04/V5.07 upgrade verifier is stricter in appearance (CRC/metadata checks;
+`CUpgrader::doMetadataCheck`). However, on the V5.07.X02 build these checks are **not
+enforced**: the CRC/Mx8Q flags are zero and `VerifyMx8QSign` is never reached, so a
+modified V5.07 package is still accepted (`Ret 515`). Root on the latest firmware is
+therefore possible with a package built from the official V5.07 base — see
+[upgrade-root-v507.md](upgrade-root-v507.md) and
+[production-firmware-v507.md](production-firmware-v507.md).
 
-Recommendation:
+Still, whether to update is a **trade-off**:
 
-- **want to keep root / local-only production** → stay on V5.01, disable
-  `OnlineUpgrade` (as in [production-firmware.md](production-firmware.md));
-- **want vendor latest** → take a verified SPI dump first, then update; dump again and
-  compare if you want to archive the new firmware.
+- the V5.07 package is currently validated **in QEMU only**; hardware validation needs an
+  SPI dump and a spare V5.07 camera;
+- if a future vendor build restores CRC/Mx8Q/partition checks, the unsigned path may
+  close again;
+- the V5.01 production image ([production-firmware.md](production-firmware.md)) is already
+  validated on real hardware.
 
 ## Capturing an OTA package safely (for a future/newer build)
 

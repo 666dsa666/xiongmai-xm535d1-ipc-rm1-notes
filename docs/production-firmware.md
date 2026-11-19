@@ -167,3 +167,5 @@ final time**; SSH survived each reboot.
 - [ota.md](ota.md) — cloud update offers V5.07.X02; why to stay on V5.01 for root
 - [return-to-stock.md](return-to-stock.md) — undo the production image / factory reset
 - [backup.md](backup.md) — SPI dump
+- [production-firmware-v507.md](production-firmware-v507.md) — equivalent production image
+  for the latest V5.07 firmware (QEMU-validated)

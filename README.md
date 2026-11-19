@@ -105,6 +105,8 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 - [docs/upgrade-root.md](docs/upgrade-root.md) — **new**: confirmed root via the unsigned V5.01 upgrade (Shell command / custom `user` partition, real-hardware evidence, procedure, risks)
 - [docs/hardening.md](docs/hardening.md) — **new**: hardening a rooted camera (admin password, extra accounts, ONVIF/RTSP/snapshot auth, cloud/PMS/NAT/online-upgrade off, 9530Disable, firewall)
 - [docs/production-firmware.md](docs/production-firmware.md) — **new**: production image with authenticated SSH root (key-only, 2222), cloud off, test matrix and recovery
+- [docs/upgrade-root-v507.md](docs/upgrade-root-v507.md) — **new**: root on the latest V5.07 too — no CRC/Mx8Q enforcement, variants and downgrade chain (QEMU-validated)
+- [docs/production-firmware-v507.md](docs/production-firmware-v507.md) — **new**: V5.07 production SSH image (key-only 2222, hardened), QEMU validation and hardware-pending notes
 - [docs/ota.md](docs/ota.md) — **new**: what the cloud app offers (V5.07.X02, same package we already have), OTA endpoint and why not to update if root is wanted
 - [docs/xmtelnet.md](docs/xmtelnet.md) — **new**: what XMTelnet really is (paid exploit + offline licence), and why the 9530/telnetd path is absent on this model
 - [docs/return-to-stock.md](docs/return-to-stock.md) — **new**: official-flash restore vs factory config reset; voice prompts and recovery
