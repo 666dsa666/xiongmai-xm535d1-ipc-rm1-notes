@@ -102,6 +102,8 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 
 ## Documents
 
+- [docs/vms.md](docs/vms.md) — **new**: VMS 2.0.28.1 setup and the cloud-created service-account/607 trap
+- [docs/local-options.md](docs/local-options.md) — **new**: time/RTC/ONVIF, PTZ, flip, speaker volume after cloud cut
 - [docs/recovery-images.md](docs/recovery-images.md) — **new**: reconstructed 8 MiB factory/brick-recovery images for V5.01/V5.07, SPI procedure and identity caveats
 - [docs/firmware-vuln-matrix.md](docs/firmware-vuln-matrix.md) — **new**: firmware × vulnerability matrix (what is HW/QEMU/static/untested) and the plan to reproduce everything on hardware
 - [docs/recording-bug.md](docs/recording-bug.md) — **new**: V5.05/V5.07 SD recording "partition error" regression, workarounds and fix plan
@@ -131,4 +133,6 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 
 Notes on personally owned hardware. No vendor firmware is redistributed.
 Documentation CC BY 4.0, snippets MIT (see [`LICENSE`](LICENSE)).
+
+
 

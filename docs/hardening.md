@@ -102,7 +102,7 @@ router.
 | Check | Before | After |
 |---|---|---|
 | admin password | empty | strong, old refused |
-| users | admin + extra admin | admin only |
+| users | admin + extra admin | admin + cloud-created service account (name varies; group user, strong random password) |
 | RTSP with empty password | 200 | 401 |
 | RTSP with new password | — | 200 |
 | ONVIF `GetProfiles` unauth | 200 | 401 / NotAuthorized |
@@ -111,6 +111,11 @@ router.
 | PMS / NAT / online upgrade / NTP | on | off |
 | 12901 / 9530 / 23 | closed on this unit | closed |
 | root shell 2323 | — | Uid 0 (still available for maintenance) |
+
+## VMS / cloud-created service account caveat
+
+Do **not** delete or leave the cloud-created service account (e.g. `jfxe` on `.161`, `twhn` on `.153`; the login is per device) as the account used by VMS: VMS 2.0.28.1 may use it for GetConfig, and a neutralised service account produces error 607 on version/stream pages while live and storage still work. Keep VMS on `admin`; keep the service account in group `user` with a strong password.
+See [vms.md](vms.md).
 
 ## Residual issues
 
@@ -121,3 +126,5 @@ router.
 - A factory reset restores the vendor defaults; re-apply and re-verify.
 - Rotate any Wi-Fi PSK / reused password that was exposed by `ConfigExport` before the
   admin password was set (see [security.md](security.md)).
+
+

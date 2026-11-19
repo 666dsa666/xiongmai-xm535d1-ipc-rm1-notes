@@ -69,13 +69,15 @@ V5.01:
 3. DVRIP reports **`V5.07.X02.000A07F3.10010.346732.0000000`** (build 2025-09-06);
 4. **SSH root key-only on 2222 works** (`Uid: 0 0 0 0`, root home `/mnt/mtd`,
    `/mnt/mtd/Log/9530Disable` present); 2323/12901/9530/23 closed;
-5. hardening persisted: admin only, PMS/NAT/OnlineUpgrade/NTP off,
-   `DisableXmServerConn` all true, `OnvifPwdCheckout` true;
+5. hardening persisted: admin + the cloud-created service account (`jfxe` on this unit; group `user`, strong random password), PMS/NAT/OnlineUpgrade/NTP off,
+   `DisableXmServerConn` all true, `OnvifPwdCheckout` true, `TelnetDebugMode=false`;
 6. RTSP empty **401** / stored hash/plain **200**; ONVIF media+device unauth **401**;
    `/webcapture.jpg` unauth **401**;
 7. `sync; reboot` via SSH → 2222/root still available (persistence);
 8. **downgrade `v501_official.bin`** → `Ret 515`, V5.01, SSH/2323 closed, hardened
    config preserved.
+
+**VMS note:** VMS 2.0.28.1 works when the device connection is set to `admin`; if VMS uses the cloud-created service account (e.g. `jfxe`) after it was downgraded, every GetConfig/encoder page fails with 607. See [vms.md](vms.md).
 
 Only caveat: no SPI dump was available; the test relied on the official-package recovery
 path. A verified dump is still recommended before future flashes.
@@ -118,3 +120,19 @@ The full agent method is in the local analysis workspace
 - [production-firmware.md](production-firmware.md) — V5.01 production image (validated on hardware)
 - [hardening.md](hardening.md) — hardening fields
 - [return-to-stock.md](return-to-stock.md) — recovery / downgrade
+
+## Final local-only state (2026-11-19)
+
+After the VMS account investigation, `.161` was brought back to V5.07 production custom and the
+following final state was validated with VMS 2.0.28.1 and a reboot:
+
+- `admin`: strong password, admin group;
+- cloud-created service account (`jfxe` on this unit; login varies per camera, e.g. `twhn` on `.153`): group `user`, strong random password. It cannot be deleted on V5.07; **do not give it to VMS** — the VMS device connection must use `admin`, otherwise GetConfig returns 607;
+- PMS / NAT / OnlineUpgrade / NTP off; `DisableXmServerConn` all true;
+- `OnvifPwdCheckout=true`; `TelnetDebugMode=false`;
+- SSH root key-only 2222; 2323/12901/9530 closed; `9530Disable` present;
+- VMS version + stream/encoder pages work.
+
+The detailed VMS account trap and local time/PTZ/audio behaviour are in [vms.md](vms.md) and
+[local-options.md](local-options.md).
+
