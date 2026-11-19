@@ -47,8 +47,9 @@ firmware image under `qemu-bench`; **NO** = tested and failed/not applicable;
 | `ConfigImport` msg 1540 traversal — root file/block-device write | YES | NO | root write, config/boot tampering, brick risk |
 | HTTP legacy bridge admin bypass / ConfigExport | YES | **YES** (on stock) | full admin + credential/PSK leak when password empty |
 | 12901 auth downgrade (VSC vs RSA) | YES | NO (binary identical) | no vendor key needed to drive the service; no root shell by itself |
-| 12901 pre-auth heap overflow (225 B) | YES | NO | RCE/DoS research target; no weaponised exploit |
-| 12901 `popen("timetest")` fixed command | YES | NO | fixed literal; PATH-hijack possibility under test |
+| 12901 pre-auth heap overflow (225 B) | YES | NO | **DoS confirmed**; control-flow influence but no reliable RCE |
+| 12901 `popen("timetest")` fixed command | YES | NO | PATH hijack **fails**: RO PATH + busybox applet already running root on TCP 50119; ZIP strips exec bit |
+| 12901 follow-up: busybox `timetest` on 50119 | NO | NO | new root-service lead, not yet audited |
 | XMTelnet / 9530 secret knock | NO | NO | absent telnetd/9530; paid exploit + offline licence; not applicable |
 | UART console / SPI flash | NO | NO | physical fallback; UART pads not identified; clip pending |
 | Vendor RSA private key | NO | NO | not present in firmware; not needed for VSC path anyway |
@@ -85,9 +86,8 @@ firmware image under `qemu-bench`; **NO** = tested and failed/not applicable;
    official packages (not a substitute for a target dump).
 3. **Optional**: hardware-validate boot-media root on camera 3 **after** a dump; it is
    destructive and QEMU-only today.
-4. **Optional**: finish 12901 `timetest` PATH / heap-overflow exploitation research
-   (QEMU only); no root primitive yet. **In progress** (agent `rsa-debug-bypass`:
-   `timetest` PATH hijack + heap/DoS probes).
+4. **Optional**: finish the new lead on the **busybox `timetest` root service on TCP 50119**
+   (QEMU only; no documentation yet); 12901 itself is settled — no root primitive.
 5. **`.153`**: keep stock or choose a later production/hardening step.
 6. Rotate the Wi-Fi PSK that was exposed by `ConfigExport` before hardening.
 7. Re-apply the chosen production image to `.161` and update docs/backup with the final
