@@ -24,10 +24,10 @@ photos are used.
 
 ![Lens side of the IPC-RM1-BLK535-2M6P V1.03 board](images/ipc-rm1-board-lens-side.jpg)
 
-The camera-module side: 2 MP lens/PTZ assembly with its 4-mount bracket in the middle, a 30-pin
-FPC tail at the top, and the peripheral harnesses at the bottom (`MIC`, `LED`, `IR`, `VIN`).
-The motor/driver circuitry is under the yellow flex stiffeners at the corners. Nothing on this
-side is user-serviceable; the photo is here for reference and for finding the flash/SoC side.
+The camera-module side: the 2 MP lens/IR-cut assembly on its bracket in the middle, a flex tail
+at the top, and the peripheral harnesses at the bottom (`MIC`, `LED`, `IR`, `VIN`). The yellow
+areas at the edges are flex stiffeners, not copper ground pour. Nothing on this side is
+user-serviceable; the photo is here for reference and for locating the flash/SoC side.
 
 ## Board — SoC side
 
