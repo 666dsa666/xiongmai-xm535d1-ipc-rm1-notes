@@ -35,10 +35,10 @@ Notes:
 
 | Firmware | CRC/Mx8Q enforced | ConfigImport msg 1540 write | HTTP bridge admin+empty | 12901 auth downgrade (VSC) | telnetd / 9530 | ONVIF/RTSP unauth | Boot-media root |
 |---|---|---|---|---|---|---|---|
-| **V5.00** | **NO** (modified package accepted) | — | — | STATIC (same `debug` md5) | **NO** (static) | RTSP `password=_` 200, bare 401 (QEMU) | — |
-| **V5.01** | **NO** | **QEMU** | **HW** (stock) | **QEMU** (full walk) | **NO** (HW + QEMU) | **HW** (ONVIF 200 before hardening) | — (agent testing portability) |
-| **V5.02** | — | — | — | STATIC | **NO** (static) | — | — |
-| **V5.04** | **CHG** (verifier changes) | — | — | STATIC | **NO** (static) | — | — |
+| **V5.00** | **NO** (modified package accepted) | — | — | STATIC (same `debug` md5) | **NO** (static) | RTSP `password=_` 200, bare 401 (QEMU) | **QEMU PASS** |
+| **V5.01** | **NO** | **QEMU** | **HW** (stock) | **QEMU** (full walk) | **NO** (HW + QEMU) | **HW** (ONVIF 200 before hardening) | **QEMU PASS** |
+| **V5.02** | — | — | — | STATIC | **NO** (static) | — | **QEMU PASS** |
+| **V5.04** | **CHG** (verifier changes) | — | — | STATIC | **NO** (static) | — | **QEMU PASS** |
 | **V5.07** | **NO** (flags 0, setters unused) | **QEMU** | **QEMU** (stock) | **QEMU** | **NO** (HW + QEMU) | **QEMU** (200 unauth stock) | **QEMU** (persistent 2323) |
 
 Shared/known facts:
@@ -48,6 +48,9 @@ Shared/known facts:
   structurally shared; only V5.01/V5.07 were dynamically exercised.
 - The whole 9530/telnetd subsystem is absent from the XM535D1 builds checked; no
   telnetd/9530 string or binary found.
+- **Boot-media root (ConfigImport → mtd5 cramfs + forged U-Boot env) passes in QEMU on all
+  five versions** (V5.00/V5.01/V5.02/V5.04/V5.07); hardware test is still pending a verified
+  SPI dump. Only the version's own official U-Boot/env is needed; the method itself is shared.
 - XMTelnet does not apply to this family (no 9530/telnetd; paid offline licence).
 - ConfigImport/HTTP bridge are `Sofia`-level paths; only V5.01/V5.07 were tested
   dynamically.

@@ -45,7 +45,7 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 | Storage | microSD slot |
 | Stock ports | 80 (Web Viewer), 554 (RTSP), 8899 (ONVIF), 34567 (Xiongmai P2P/DVRIP) |
 
-Board photos (both sides, SoC close-up, annotated UART candidates): [docs/hardware-photos.md](docs/hardware-photos.md) — the UART pads remain **unconfirmed**.
+Board photos (both sides, SoC close-up, owner-probed points — no UART found): [docs/hardware-photos.md](docs/hardware-photos.md) — the UART pads are **not present/usable** on this revision.
 
 ## It already streams
 
@@ -103,7 +103,8 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 ## Documents
 
 - [docs/firmware-vuln-matrix.md](docs/firmware-vuln-matrix.md) — **new**: firmware × vulnerability matrix (what is HW/QEMU/static/untested) and the plan to reproduce everything on hardware
-- [docs/hardware-photos.md](docs/hardware-photos.md) — **new**: board photos (both sides, SoC close-up, annotated UART candidates), captions, provenance and what was redacted
+- [docs/recording-bug.md](docs/recording-bug.md) — **new**: V5.05/V5.07 SD recording "partition error" regression, workarounds and fix plan
+- [docs/hardware-photos.md](docs/hardware-photos.md) — **new**: board photos (both sides, SoC close-up, owner-probed points), captions, provenance and what was redacted
 - [docs/firmware.md](docs/firmware.md) — current version, official update file, update methods
 - [docs/firmware-v507.md](docs/firmware-v507.md) — **new**: V5.07.X02 package analysis (InstallDesc, partitions, PMS/cloud strings)
 - [docs/cves.md](docs/cves.md) — CVEs and validated weaknesses (RTSP/ONVIF auth, hard-coded creds, 9530/12901, new 2026 Sofia CVEs)
