@@ -41,9 +41,9 @@ firmware image under `qemu-bench`; **NO** = tested and failed/not applicable;
 |---|---|---|---|
 | **Unsigned upgrade, V5.01** — `Shell` command / custom `user` | YES | **YES** | root command as root; persistent 2323; production SSH 2222 |
 | **Unsigned upgrade, V5.07** — no CRC/Mx8Q enforcement | YES | **YES** | V5.07 production SSH 2222 validated on HW; `Ret 515` |
-| Upgrade **without burning `user`** (V5.07 kernel + V5.01 rooted `/usr`) | YES | NO | root preserved, but V5.01 modules/ISP mismatch V5.07 kernel — not production |
+| Upgrade **without burning `user`** (V5.07 kernel + V5.01 rooted `/usr`) | YES | NO | **abandoned** — root preserved but V5.01 modules/ISP mismatch the V5.07 kernel; not needed since V5.01 and V5.07 both have direct root entry points |
 | **Downgrade V5.07 → V5.01** official | YES | **YES** | `Ret 515`, V5.01 restored; config preserved |
-| **Boot-media root V5.07** — ConfigImport writes mtd5 cramfs `/init` + mtd0 U-Boot/env | YES | **NO** | network-only persistent root on 2323; destructive to mtd0/mtd5; no hardware validation |
+| **Boot-media root V5.07** — ConfigImport writes mtd5 cramfs `/init` + mtd0 U-Boot/env | YES | **NO** | network-only persistent root on 2323; destructive to mtd0/mtd5; QEMU V5.07 only — the same `ConfigImport`/layout exists on V5.00–V5.04/V5.01, so it is *likely* portable, but untested |
 | `ConfigImport` msg 1540 traversal — root file/block-device write | YES | NO | root write, config/boot tampering, brick risk |
 | HTTP legacy bridge admin bypass / ConfigExport | YES | **YES** (on stock) | full admin + credential/PSK leak when password empty |
 | 12901 auth downgrade (VSC vs RSA) | YES | NO (binary identical) | no vendor key needed to drive the service; no root shell by itself |
@@ -86,7 +86,8 @@ firmware image under `qemu-bench`; **NO** = tested and failed/not applicable;
 3. **Optional**: hardware-validate boot-media root on camera 3 **after** a dump; it is
    destructive and QEMU-only today.
 4. **Optional**: finish 12901 `timetest` PATH / heap-overflow exploitation research
-   (QEMU only); no root primitive yet.
+   (QEMU only); no root primitive yet. **In progress** (agent `rsa-debug-bypass`:
+   `timetest` PATH hijack + heap/DoS probes).
 5. **`.153`**: keep stock or choose a later production/hardening step.
 6. Rotate the Wi-Fi PSK that was exposed by `ConfigExport` before hardening.
 7. Re-apply the chosen production image to `.161` and update docs/backup with the final
