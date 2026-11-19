@@ -16,8 +16,8 @@ photos are used.
 
 > **UART was not found on this board revision.** The owner physically probed the points below:
 > there is **no UART test pad** usable as a console. The three-pad group is I2C (square pad =
-> GND), the red pair is the speaker/unknown, and the 2×3 cluster is a set of small resistors,
-> not a test-pad grid. The console itself is known from the flash dump to be **ttyAMA0,
+> GND), **both red pads are the speaker connection**, and the 2×3 cluster is a set of small
+> resistors, not a test-pad grid. The console itself is known from the flash dump to be **ttyAMA0,
 > 115200 8N1** (U-Boot 2014.04, `Password:` prompt), but no physical access point was
 > identified. Use the SPI clip ([backup.md](backup.md)); the UART hunt is closed for this board.
 
@@ -70,22 +70,17 @@ The owner tested this group. It is **I2C, not UART**:
 - the two **round pads are the I2C lines**;
 - it is useful only as a GND/3V3 reference for a meter.
 
-## Speaker / test area — SPK and 2×3 resistors
+## Speaker pads — both linked to SPK
 
-![SPK connector and probed points, annotated](images/ipc-rm1-spk-probed-points-annotated.jpg)
+![Speaker pads, annotated](images/ipc-rm1-spk-probed-points-annotated.jpg)
 
-The red group and the yellow cluster are **not UART**:
+The two filled pads right of `1 SPK` are the **speaker connections**. **Both pads are linked to
+the speaker**, not to a UART: there is no RX/TX header here.
 
-- **red pair, right of `1 SPK`**:
-  - the **bottom pin is linked to the speaker**;
-  - the **top pin is not GND**; its function is still unknown;
-  - this pair is not a UART RX/TX header.
-- **yellow 2×3 cluster**: these are **small resistors** on the PCB, not test pads and not a
-  debug/programming grid.
-
-There is no `UART`/`DBG`/`TX`/`RX` silkscreen anywhere on the board, and the owner found no
-remaining UART test pad after probing. Consequently the physical UART route is **excluded** on
-this revision; the recovery path is the SPI clip.
+The nearby 2×3 parts are **resistors**. They were initially mistaken for test pads, but they are
+**not test pads and not UART**. There is no `UART`/`DBG`/`TX`/`RX` silkscreen anywhere on the
+board, and the owner found no remaining UART test pad after probing. Consequently the physical
+UART route is **excluded** on this revision; the recovery path is the SPI clip.
 
 ## Speaker connector area — close-up
 
@@ -124,7 +119,7 @@ published crops are ≤ 1600 px wide.
 | `images/ipc-rm1-board-soc-side.jpg` | `uart/back_candidates.png` | full board, SoC side, turned upright (1510×2070) |
 | `images/ipc-rm1-soc-xm535d1.jpg` | `uart/n_soc_area.png` | XM535D1 package marking (1080×1080) |
 | `images/ipc-rm1-left-i2c-annotated.jpg` | `uart/n_left_3pad.png` | left 3-pad group: square GND, round pads I2C (900×1500) |
-| `images/ipc-rm1-spk-probed-points-annotated.jpg` | `uart/n_bottom_left.png` | SPK pad and 2×3 resistors, annotated (930×900) |
+| `images/ipc-rm1-spk-probed-points-annotated.jpg` | `uart/n_bottom_left.png` | speaker pads, annotated (930×900) |
 | `images/ipc-rm1-spk-probed-points.jpg` | `uart/n_bottom_left.png` | same area, unannotated (930×900) |
 
 Total image payload: ~1.4 MB.
