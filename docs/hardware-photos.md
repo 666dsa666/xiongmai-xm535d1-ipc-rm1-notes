@@ -60,20 +60,28 @@ dump/restore path uses a CH341A SOIC-8 clip ([backup.md](backup.md)), which does
 We intentionally do **not** publish a crop that we cannot positively identify as the flash — a
 mis-labelled "flash" photo would be worse than none.
 
-## Points probed — no UART found
+## Left-edge 3-pad group — I2C (not UART)
 
-![Probed points on the SoC side](images/ipc-rm1-probed-points-annotated.jpg)
+![Left-edge 3-pad group, annotated](images/ipc-rm1-left-i2c-annotated.jpg)
 
-These are the points that were actually tested **by the owner**, with the resulting findings:
+The owner tested this group. It is **I2C, not UART**:
 
-- **blue circle — 3-pad group at the left edge**: **I2C, not UART**. The square pad is **GND**;
-  the two round pads are the I2C lines. Useful as a GND/3V3 reference only.
-- **red circle — two filled pads right of the `1 SPK` connector**:
+- the **square pad is GND**;
+- the two **round pads are the I2C lines**;
+- it is useful only as a GND/3V3 reference for a meter.
+
+## Speaker / test area — SPK and 2×3 resistors
+
+![SPK connector and probed points, annotated](images/ipc-rm1-spk-probed-points-annotated.jpg)
+
+The red group and the yellow cluster are **not UART**:
+
+- **red pair, right of `1 SPK`**:
   - the **bottom pin is linked to the speaker**;
   - the **top pin is not GND**; its function is still unknown;
-  - this pair is **not a UART RX/TX header**.
-- **yellow circle — 2×3 cluster below/right**: these are **small resistors** on the PCB, **not
-  test pads** and not a debug/programming grid.
+  - this pair is not a UART RX/TX header.
+- **yellow 2×3 cluster**: these are **small resistors** on the PCB, not test pads and not a
+  debug/programming grid.
 
 There is no `UART`/`DBG`/`TX`/`RX` silkscreen anywhere on the board, and the owner found no
 remaining UART test pad after probing. Consequently the physical UART route is **excluded** on
@@ -115,7 +123,8 @@ published crops are ≤ 1600 px wide.
 | `images/ipc-rm1-board-lens-side.jpg` | `uart/front_candidates.png` | full board, lens side (1600×2130) |
 | `images/ipc-rm1-board-soc-side.jpg` | `uart/back_candidates.png` | full board, SoC side, turned upright (1510×2070) |
 | `images/ipc-rm1-soc-xm535d1.jpg` | `uart/n_soc_area.png` | XM535D1 package marking (1080×1080) |
-| `images/ipc-rm1-probed-points-annotated.jpg` | `uart/uart_candidates.png` | owner-probed points, corrected labels, QR redacted (1170×1437) |
-| `images/ipc-rm1-spk-probed-points.jpg` | `uart/n_bottom_left.png` | SPK connector + probed points, unannotated (930×900) |
+| `images/ipc-rm1-left-i2c-annotated.jpg` | `uart/n_left_3pad.png` | left 3-pad group: square GND, round pads I2C (900×1500) |
+| `images/ipc-rm1-spk-probed-points-annotated.jpg` | `uart/n_bottom_left.png` | SPK pad and 2×3 resistors, annotated (930×900) |
+| `images/ipc-rm1-spk-probed-points.jpg` | `uart/n_bottom_left.png` | same area, unannotated (930×900) |
 
 Total image payload: ~1.4 MB.
