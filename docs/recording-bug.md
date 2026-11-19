@@ -83,3 +83,4 @@ Next: retry with a **32 GB or smaller, known-good card** (or a card already form
 another XM camera), then follow the reproduction protocol. This first test suggests part of
 the field reports may be card/SDXC compatibility, not only the V5.05+ firmware check.
 
+

@@ -55,7 +55,7 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
 | **XMTelnet model** | paid exploit + offline licence; 9530 subsystem absent → not applicable |
 | **Signed-upgrade assumptions** | V5.01/V5.07 accept modified packages despite `Mx8Q`; documented |
 | **Factory recovery images** | reconstructed V5.01/V5.07 8 MiB images built from official packages, QEMU boot PASS (mtd5 formats on first boot); not a target dump |
-| **SD recording regression** | V5.05+ `Storage.SDCheckStatus` health subsystem; V5.04 downgrade workaround. Card formatted/recording via VMS on the 64 GB Evo Plus, but the 5–10 min failure was not reproduced before the stock/reset tests |
+| **SD recording regression** | V5.05+ `Storage.SDCheckStatus` health subsystem; V5.04 downgrade workaround. 64 GB Evo Plus formatted via VMS; continuous 5-min recordings for hours, no 5–10 min failure reproduced on this card/config |
 | **Generic V5.0x flaw matrix** | CRC/Mx8Q compiled but enforcement off in all five builds; Shell/ConfigImport/HTTP/12901 shared; V5.04/V5.07 add code but no authentication |
 
 ---
@@ -112,6 +112,7 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
   (status, upgrade-root, upgrade-root-v507, production-firmware, production-firmware-v507,
   boot-media-root-v507, recovery-images, recording-bug, debug-12901, xmtelnet, ota,
   return-to-stock, hardware-photos, firmware-vuln-matrix).
+
 
 
 
