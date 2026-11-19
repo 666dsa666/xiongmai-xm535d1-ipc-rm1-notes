@@ -103,7 +103,7 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 ## Documents
 
 - [docs/firmware-vuln-matrix.md](docs/firmware-vuln-matrix.md) — **new**: firmware × vulnerability matrix (what is HW/QEMU/static/untested) and the plan to reproduce everything on hardware
-- [docs/hardware-photos.md](docs/hardware-photos.md) — **new**: board photos (both sides, SoC/flash area, annotated UART candidates), captions, provenance and what was redacted
+- [docs/hardware-photos.md](docs/hardware-photos.md) — **new**: board photos (both sides, SoC close-up, annotated UART candidates), captions, provenance and what was redacted
 - [docs/firmware.md](docs/firmware.md) — current version, official update file, update methods
 - [docs/firmware-v507.md](docs/firmware-v507.md) — **new**: V5.07.X02 package analysis (InstallDesc, partitions, PMS/cloud strings)
 - [docs/cves.md](docs/cves.md) — CVEs and validated weaknesses (RTSP/ONVIF auth, hard-coded creds, 9530/12901, new 2026 Sofia CVEs)
