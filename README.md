@@ -102,6 +102,7 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 
 ## Documents
 
+- [docs/recovery-images.md](docs/recovery-images.md) — **new**: reconstructed 8 MiB factory/brick-recovery images for V5.01/V5.07, SPI procedure and identity caveats
 - [docs/firmware-vuln-matrix.md](docs/firmware-vuln-matrix.md) — **new**: firmware × vulnerability matrix (what is HW/QEMU/static/untested) and the plan to reproduce everything on hardware
 - [docs/recording-bug.md](docs/recording-bug.md) — **new**: V5.05/V5.07 SD recording "partition error" regression, workarounds and fix plan
 - [docs/hardware-photos.md](docs/hardware-photos.md) — **new**: board photos (both sides, SoC close-up, owner-probed points), captions, provenance and what was redacted

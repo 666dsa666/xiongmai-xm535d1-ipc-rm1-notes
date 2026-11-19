@@ -10,12 +10,13 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
 | Camera | State | Role |
 |---|---|---|
 | `.153` | stock V5.01, cloud/PMS as vendor | reference; never flashed |
-| `.161` | stock V5.01 **with hardened config**, no SSH/root (2222/2323 closed) | hardware test unit |
+| `.161` | **V5.07.X02 production root**, SSH 2222 key-only, **local-only hardened** (cloud off), admin strong, `jfxe` neutralized; iCSee offline expected | main hardened unit |
 | camera 3 | new in box, not connected | SPI dump/recovery reference |
 
 - SPI clip: **not available yet**; no verified SPI dump of any camera.
-- `.161` was taken through V5.01 stock → V5.07 production SSH → V5.01 official downgrade;
-  it is currently stock V5.01 with hardened config.
+- `.161` history: V5.01 stock → V5.07 production SSH → V5.01 official downgrade → V5.07 official
+  (OTA test) → factory wipe → V5.07 production root → local-only hardening. It is currently the
+  hardened local-only unit; `jfxe` remains neutralized (`user`, random password) until the final wipe.
 
 ---
 
@@ -28,11 +29,11 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
 | **V5.01 → V5.07 → V5.01 round-trip** | `Ret 515` both directions; version changes confirmed; config preserved |
 | **Production SSH (V5.01 and V5.07)** | key-only root on 2222, no 2323/12901/9530; persists after reboot |
 | **Hardening** | admin only/strong password; PMS/NAT/OnlineUpgrade/NTP off; `DisableXmServerConn`; `OnvifPwdCheckout`; `9530Disable` |
-| **Auth behaviour after hardening** | RTSP blank 401 / new 200; ONVIF media+device 401; snapshot 401; HTTP bridge wrong password 203 |
+| **Auth behaviour after hardening** | RTSP blank 401 / new 200; ONVIF media+device 401; snapshot 401; HTTP bridge **203 even with the correct credential** (legacy bridge only works with an empty admin password) |
 | **Official firmware restore / downgrade** | official V5.01/V5.07 package `Ret 515`; SSH/root removed; config kept |
 | **Config preservation across upgrade/downgrade/reboot** | hardened fields re-read after each reboot |
 | **HTTP bridge + ConfigExport on stock** | admin+empty full admin; config ZIP with accounts/PSK (observed before hardening) |
-| **No telnetd / no 9530 subsystem** | `find / -iname '*telnet*'` empty, no listener; checked on real rooted V5.01 |
+| **No telnetd / no 9530 subsystem** | `find / -iname '*telnet*'` empty, no listener; checked on real rooted V5.01 and V5.07 |\n| **TCP 50119 `timetest` is not real** | closed 0/3 on stock `.153` and hardened `.161`; it is a QEMU-only artifact |
 | **OTA version/URL** | camera stored `V5.07.X02` URL in `/mnt/mtd/Log/ota_info.txt`; app offered same build |
 | **Windows SSH client key ACL** | `icacls /inheritance:r` + owner grant required; client-side only |
 
@@ -41,7 +42,7 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
 | Item | Result |
 |---|---|
 | V5.00/V5.02/V5.04 boots and baseline | booted; no hardware test; intermediate versions abandoned as root targets |
-| **Boot-media root on stock V5.07** | ConfigImport → `mtd5` cramfs `/init` + `mtd0` U-Boot/env; persistent root console 2323; arbitrary ARM exec; **no hardware test** |
+| **Boot-media root — portable** | ConfigImport → `mtd5` cramfs `/init` + forged `mtd0` U-Boot/env; PASS in QEMU on **V5.00/V5.01/V5.02/V5.04/V5.07**, persistent root 2323; **no hardware test** |
 | **ConfigImport msg 1540 traversal** | root file/block-device write; `mtd0`/`mtd1`/`mtd5` writable; brick risk |
 | **V5.07 no CRC/Mx8Q enforcement** | flags 0, setters uncalled, `VerifyMx8QSign` unreachable; `Ret 515` with modified `user` |
 | **Upgrade without burning `user`** | root preserved, but V5.01 userspace with V5.07 kernel → modules/ISP mismatch; **abandoned** |
@@ -50,7 +51,7 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
 | **12901 PATH hijack** | failed: RO PATH, `timetest` is a busybox applet already running root on **50119**, ZIP drops exec bit |
 | **`core_pattern`/`hotplug` helper** | writable but no core dumps / no exec bit → fails |
 | **XMTelnet model** | paid exploit + offline licence; 9530 subsystem absent → not applicable |
-| **Signed-upgrade assumptions** | V5.01/V5.07 accept modified packages despite `Mx8Q`; documented |
+| **Signed-upgrade assumptions** | V5.01/V5.07 accept modified packages despite `Mx8Q`; documented |\n| **Factory recovery images** | reconstructed V5.01/V5.07 8 MiB images built from official packages, QEMU boot PASS (mtd5 formats on first boot); not a target dump |\n| **SD recording regression** | V5.05+ `Storage.SDCheckStatus` health subsystem; V5.04 downgrade workaround; V5.07 still affected |\n| **Generic V5.0x flaw matrix** | CRC/Mx8Q compiled but enforcement off in all five builds; Shell/ConfigImport/HTTP/12901 shared; V5.04/V5.07 add code but no authentication |
 
 ---
 
@@ -65,13 +66,13 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
 | **Boot-media root portability to V5.00–V5.04/V5.01** | same ConfigImport/layout; untested |
 | **`timetest` busybox service on TCP 50119** | new root-service lead; no protocol audit yet |
 | **Factory recovery image from official packages** | can be generated (not a target dump); test in QEMU/SPI |
-| **Voice prompts after official flash** | expected restored (whole `user` partition); not explicitly re-checked on HW |
+| **Voice prompts on hardware** | QEMU: official flash rewrites mtd3 and restores them; config reset does not. Hardware re-check optional |
 | **Camera 3 version/behaviour** | new in box; unknown V5.01/V5.07 status |
-| **Final state of `.161`** | choose V5.07 production SSH (recommended), V5.01 production SSH, or stock |
-| **`.153` decision** | keep stock or later production/hardening |
+| **Final state of `.161`** | **resolved: local-only V5.07 production root + cloud cut**; only local-options audit pending |
+| **`.153` decision** | keep stock (current) or later production/hardening |
 | **Rotate exposed Wi-Fi PSK** | `ConfigExport` exposed it before hardening; user action |
 | **CVE-2026-79393 / other family CVEs** | not assessed; could be tested on QEMU/spare |
-| **12901 heap RCE** | optional research; DoS confirmed, no weaponised exploit |
+| **12901 heap RCE** | optional research; DoS confirmed, no weaponised exploit |\n| **Local options after root/cloud-cut** | `local-options-audit` running: time/RTC/NTP, PTZ speed/rotation, speaker volume, persistence |
 
 ---
 
@@ -85,7 +86,7 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
 | **Vendor RSA private-key search** | not present in firmware; not needed for the VSC path anyway |
 | **12901 as a root path** | auth bypass + heap DoS only; no arbitrary command (`timetest` fixed) |
 | **12901 PATH hijack / core_pattern / hotplug** | all measured blocked (RO PATH, exec bit, RLIMIT_CORE=0) |
-| **UART pad investigation** | stopped earlier; SPI is the chosen physical path (could revisit) |
+| **UART pad investigation** | **closed**: owner probed; 3-pad = I2C+GND, red = speaker, 2×3 = resistors; no UART pads |\n| **TCP 50119 `timetest`** | absent on real hardware; QEMU-only artifact |
 | **OpenIPC replacement** | no video backend for XM535D1 |
 | **CVE-2026-34005 HostName injection** | negative on this IPC (dead code/no caller) |
 | **Intermediate downgrade as a root route** | no access advantage; V5.01/V5.07 already rooted |
@@ -102,4 +103,5 @@ firmware image under `qemu-bench`; **NO** = failed / not applicable.
   docs snapshot, SHA256SUMS).
 - Public docs: <https://github.com/666dsa666/xiongmai-xm535d1-ipc-rm1-notes>
   (status, upgrade-root, upgrade-root-v507, production-firmware, production-firmware-v507,
-  boot-media-root-v507, debug-12901, xmtelnet, ota, return-to-stock).
+  boot-media-root-v507, recovery-images, recording-bug, debug-12901, xmtelnet, ota,\n  return-to-stock, hardware-photos, firmware-vuln-matrix).
+
