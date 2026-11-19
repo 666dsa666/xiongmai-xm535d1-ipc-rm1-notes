@@ -5,6 +5,10 @@ camera behaviours, independent of iCSee/VMS/cloud.
 
 ## Time / RTC / NTP
 
+> **Do not trust `date` over SSH.** The root shell's `TZ` differs from the application; VMS
+> showed the correct time while `date`/`date -u` over SSH were shifted. Use VMS/ONVIF as the
+> reference. Full list: [quirks.md](quirks.md).
+
 - **No RTC** on this board: no `/dev/rtc*`, no rtc driver, `hwclock` fails.
 - `Sofia` persists the clock to `/mnt/mtd/Config/SysTime` (JFFS2) and restores it at boot
   (`RecoverTime`); it survives reboot but loses time while powered off (plus save lag).
