@@ -102,6 +102,7 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 
 ## Documents
 
+- [docs/security-audit.md](docs/security-audit.md) — **new**: component/CVE audit of the V5.07 production image, residual LAN risks and post-reset checklist
 - [docs/quirks.md](docs/quirks.md) — **new**: all known traps — SSH `date` vs camera time, WFS raw partitions, DVRIP/VMS quirks, port 80, service account, cloud cut
 - [docs/vms.md](docs/vms.md) — **new**: VMS 2.0.28.1 setup and the cloud-created service-account/607 trap
 - [docs/local-options.md](docs/local-options.md) — **new**: time/RTC/ONVIF, PTZ, flip, speaker volume after cloud cut
