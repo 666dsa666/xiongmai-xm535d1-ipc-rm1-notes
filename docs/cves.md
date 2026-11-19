@@ -19,7 +19,7 @@ unit** from what is **assumed from the shared codebase**.
 | **CVE-2025-65856** | Authentication bypass on XM530 `V5.00.R02.000807D8…ONVIF 21.06`: unauthenticated device info + live video. | **Likely inherited**: unauth `GetProfiles`/`GetStreamUri` on `:8899` works on this unit (newer V5.07 build, same lineage). |
 | **CVE-2025-65857** | `GetStreamUri` returns an RTSP URI with a **hard-coded credential**. | **Validated**: unauthenticated ONVIF `GetStreamUri` returns `rtsp://…user=admin_password=tlJwpbo6…`. |
 | **CVE-2024-3765** | Critical vulnerability in XM530 `R80X30-PQ_8M` (details withheld in NVD). | **Unassessed**; same SoC family. |
-| **CVE-2020-22253** | Port **9530** "secret knock" starts telnet on older Xiongmai devices. | **Not applicable**: 23/4321/9530 are closed. This vendor moved the debug service to the RSA-protected **12901** (`/usr/bin/debug`); see [telnet.md](telnet.md). |
+| **CVE-2020-22253** | Port **9530** "secret knock" starts telnet on older Xiongmai devices. | **Not applicable**: 23/4321/9530 are closed. This vendor moved the debug service to the RSA-protected **12901** (`/usr/bin/debug`); see [telnet.md](telnet.md) and [xmtelnet.md](xmtelnet.md). |
 | **CVE-2018-17917 / 17919** | XMeye P2P cloud: MAC→Cloud-ID enumeration; undocumented `default` account/password. | **Cloud side**: relevant while the camera uses `push.umeye.cn` (PMS). Cut the cloud or isolate the camera. |
 | **CVE-2018-17915** | XMeye cloud communication not fully encrypted. | Same: cloud side only. |
 | **CVE-2017-16725 / CVE-2018-10088** | NetSurveillance/uc-httpd stack overflows. | **Not applicable**: this firmware's web/ONVIF/RTSP stack is `Sofia`, not `uc-httpd`. |
