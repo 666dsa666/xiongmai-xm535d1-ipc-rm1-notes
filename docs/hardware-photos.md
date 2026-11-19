@@ -62,7 +62,7 @@ mis-labelled "flash" photo would be worse than none.
 
 ## Left-edge 3-pad group — I2C (not UART)
 
-![Left-edge 3-pad group, annotated](images/ipc-rm1-left-i2c-annotated.jpg)
+![Left-edge 3-pad group, annotated](images/ipc-rm1-left-i2c-annotated-v2.jpg)
 
 The owner tested this group. It is **I2C, not UART**:
 
@@ -72,7 +72,7 @@ The owner tested this group. It is **I2C, not UART**:
 
 ## Speaker pads — both linked to SPK
 
-![Speaker pads, annotated](images/ipc-rm1-spk-probed-points-annotated.jpg)
+![Speaker pads, annotated](images/ipc-rm1-spk-probed-points-annotated-v2.jpg)
 
 The two filled pads right of `1 SPK` are the **speaker connections**. **Both pads are linked to
 the speaker**, not to a UART: there is no RX/TX header here.
@@ -118,8 +118,9 @@ published crops are ≤ 1600 px wide.
 | `images/ipc-rm1-board-lens-side.jpg` | `uart/front_candidates.png` | full board, lens side (1600×2130) |
 | `images/ipc-rm1-board-soc-side.jpg` | `uart/back_candidates.png` | full board, SoC side, turned upright (1510×2070) |
 | `images/ipc-rm1-soc-xm535d1.jpg` | `uart/n_soc_area.png` | XM535D1 package marking (1080×1080) |
-| `images/ipc-rm1-left-i2c-annotated.jpg` | `uart/n_left_3pad.png` | left 3-pad group: square GND, round pads I2C (900×1500) |
-| `images/ipc-rm1-spk-probed-points-annotated.jpg` | `uart/n_bottom_left.png` | speaker pads, annotated (930×900) |
+| `images/ipc-rm1-left-i2c-annotated-v2.jpg` | `uart/n_left_3pad.png` | left 3-pad group: square GND, round pads I2C (900×1500) |
+| `images/ipc-rm1-spk-probed-points-annotated-v2.jpg` | `uart/n_bottom_left.png` | speaker pads, annotated (930×900) |
 | `images/ipc-rm1-spk-probed-points.jpg` | `uart/n_bottom_left.png` | same area, unannotated (930×900) |
 
 Total image payload: ~1.4 MB.
+
