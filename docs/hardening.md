@@ -10,6 +10,9 @@ names exist on V5.07 but the hardening wasn't re-tested on a physical V5.07 unit
 
 > This page assumes you already have root and a verified SPI dump. Keep the dump and the
 > official package for recovery.
+>
+> For the final production variant with authenticated SSH (key-only, no 2323) and the
+> hardening below already applied, see [production-firmware.md](production-firmware.md).
 
 ## 1. Admin password
 

@@ -161,6 +161,11 @@ mount       # /dev/mtdblock3 on /usr type squashfs
 
 ## Hardening after rooting
 
+A production-oriented variant of this work replaces the unauthenticated 2323 shell with
+**SSH key-only root on 2222**, applies the hardening below, and was validated on real
+hardware. Build, deployment and test matrix:
+[production-firmware.md](production-firmware.md).
+
 Once you have root:
 
 - change the admin password and remove/audit the hidden `twhn`/extra accounts;

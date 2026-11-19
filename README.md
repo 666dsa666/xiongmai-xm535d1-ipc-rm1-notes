@@ -20,6 +20,12 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 > shell on TCP 2323 after the automatic reboot. See
 > [docs/upgrade-root.md](docs/upgrade-root.md). A verified full SPI dump is still mandatory
 > before flashing anything.
+>
+> **Production build:** one spare camera is now running a hardened production image —
+> SSH **key-only root on TCP 2222**, no unauthenticated shell, cloud/PMS/NAT/online
+> upgrade/NTP disabled, ONVIF/RTSP/snapshot password-protected. Details, build and
+> recovery: [docs/production-firmware.md](docs/production-firmware.md). The first camera
+> was left stock.
 
 ## Board
 
@@ -98,6 +104,7 @@ SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 - [docs/root.md](docs/root.md) — **new**: root/shell path matrix and the definitive telnet verdict
 - [docs/upgrade-root.md](docs/upgrade-root.md) — **new**: confirmed root via the unsigned V5.01 upgrade (Shell command / custom `user` partition, real-hardware evidence, procedure, risks)
 - [docs/hardening.md](docs/hardening.md) — **new**: hardening a rooted camera (admin password, extra accounts, ONVIF/RTSP/snapshot auth, cloud/PMS/NAT/online-upgrade off, 9530Disable, firewall)
+- [docs/production-firmware.md](docs/production-firmware.md) — **new**: production image with authenticated SSH root (key-only, 2222), cloud off, test matrix and recovery
 - [docs/telnet.md](docs/telnet.md) — **rewritten**: EnableKey decoy, safety-code reverse, 12901 vendor debug, UART path
 - [docs/emulation.md](docs/emulation.md) — **new**: rebuild the official 8 MiB image and boot it in qemu-bench `xm535`
 - [docs/openipc.md](docs/openipc.md) — why OpenIPC has no video on XM535D1

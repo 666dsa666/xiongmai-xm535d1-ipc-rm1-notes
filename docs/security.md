@@ -155,3 +155,9 @@ while experimenting, not a production configuration:
   an authenticated service;
 - also create `/mnt/mtd/Log/9530Disable` to keep the vendor debug service (12901) off at
   boot.
+
+The validated production variant does exactly this: it removes 2323 and runs **dropbear
+SSH, key-only, on TCP 2222**, with cloud/PMS/NAT/online upgrade/NTP off and
+ONVIF/RTSP/snapshot password-protected. See
+[production-firmware.md](production-firmware.md). The SSH port must still be firewalled
+to the management host and the client private key protected.
