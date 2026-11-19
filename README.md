@@ -13,9 +13,13 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 >
 > The network telnet path was fully reverse-engineered: the DVRIP `EnableKey` gate is a
 > decoy, and the only real debug service (`/usr/bin/debug`, TCP **12901**) is protected by
-> the vendor's RSA private key. There is **no network-only root path**; use UART or an SPI
-> dump. The stock firmware is also reproducible in QEMU — see
-> [docs/telnet.md](docs/telnet.md) and [docs/emulation.md](docs/emulation.md).
+> the vendor's RSA private key. That is **not** the end of the story: the V5.01 unit build
+> accepts a **modified/unsigned update package**, and its `InstallDesc` can run a `Shell`
+> command as root (or replace the `user` partition with a custom root-shell daemon). This
+> was confirmed in QEMU **and on a spare physical camera**; it gives a persistent root
+> shell on TCP 2323 after the automatic reboot. See
+> [docs/upgrade-root.md](docs/upgrade-root.md). A verified full SPI dump is still mandatory
+> before flashing anything.
 
 ## Board
 
@@ -75,11 +79,14 @@ and verification commands: [docs/cloud-cut.md](docs/cloud-cut.md).
 Official package `V5.07.X02` (2025-09-06), vendor link, SHA-256, partition list and
 what it contains: [docs/firmware-v507.md](docs/firmware-v507.md).
 
-Key points: upgrades are **signed** (`Mx8Q` in `InstallDesc`), which closes the old
-unsigned "telnet opener" upgrade trick; DVRIP `EnableKey` is **ignored**; ports
-23/4321/9530 are closed and the real vendor debug service is **12901** (RSA-protected,
-vendor-only). A persistent shell requires UART (auto root login on the board console) or an
-SPI dump — the flash is an 8 MiB **FM25Q64**.
+Key points: the **V5.01** unit build accepts a modified/unsigned package: the `Mx8Q`
+signature is not enforced, a `Shell` upgrade command is executed as root, and the
+`user-x.cramfs.img` payload can be replaced (persistent root shell after reboot). That is
+the confirmed root path — see [docs/upgrade-root.md](docs/upgrade-root.md). The official
+V5.07 package has stricter metadata/CRC checks and was not hardware-tested with a
+modified payload. DVRIP `EnableKey` is still **ignored**; ports 23/4321/9530 are closed
+and the real vendor debug service is **12901** (RSA-protected, vendor-only). A verified
+SPI dump (8 MiB **FM25Q64**) is still required before any flash.
 
 ## Documents
 
@@ -89,6 +96,7 @@ SPI dump — the flash is an 8 MiB **FM25Q64**.
 - [docs/cves.md](docs/cves.md) — CVEs and validated weaknesses (RTSP/ONVIF auth, hard-coded creds, 9530/12901, new 2026 Sofia CVEs)
 - [docs/cloud-cut.md](docs/cloud-cut.md) — **new**: how to go 100% local (WAN block, PMS disable, static IP caveats)
 - [docs/root.md](docs/root.md) — **new**: root/shell path matrix and the definitive telnet verdict
+- [docs/upgrade-root.md](docs/upgrade-root.md) — **new**: confirmed root via the unsigned V5.01 upgrade (Shell command / custom `user` partition, real-hardware evidence, procedure, risks)
 - [docs/telnet.md](docs/telnet.md) — **rewritten**: EnableKey decoy, safety-code reverse, 12901 vendor debug, UART path
 - [docs/emulation.md](docs/emulation.md) — **new**: rebuild the official 8 MiB image and boot it in qemu-bench `xm535`
 - [docs/openipc.md](docs/openipc.md) — why OpenIPC has no video on XM535D1

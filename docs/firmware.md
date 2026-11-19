@@ -63,6 +63,13 @@ This means the previous reverse-engineering conclusions (EnableKey decoy, 12901 
 debug, UART auto-login) can be checked against the **actual unit build**, not only the
 V5.07 proxy. The exact V5.01 image is available for that in the analysis workspace.
 
+> **Update (2026-11-19):** a modified/unsigned V5.01 package was accepted by a physical
+> spare camera (`Ret 515`), its `InstallDesc` `Shell` command ran as root, and a custom
+> `user` partition gave a persistent root shell after reboot. See
+> [upgrade-root.md](upgrade-root.md). The `Mx8Q` signature is **not enforced on V5.01**,
+> contrary to the earlier assumption on this page; V5.04/V5.07 metadata checks still need
+> separate testing.
+
 ## How to update
 
 ### 1. Camera web UI (simplest)

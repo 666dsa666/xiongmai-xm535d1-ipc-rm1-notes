@@ -39,6 +39,26 @@ by creating `/mnt/mtd/Log/9530Disable` (or `/mnt/custom/9530Disable`) — the da
 with `LIBDVR : Debug: is Disabled!` when either marker exists. Details:
 [telnet.md](telnet.md).
 
+## Non-CVE finding: unsigned upgrade → root (confirmed on hardware)
+
+This is not a named CVE yet, but it is the most serious issue found on this product:
+the **V5.01** `CUpgrader` accepts a modified/unsigned package. The `Mx8Q` signature is
+not enforced, a `Shell` command in `InstallDesc` is executed **as root**, and the
+`user-x.cramfs.img` payload can be replaced by a custom squashfs. The latter gives a
+persistent root shell on TCP 2323 after the automatic reboot.
+
+Status:
+
+- **QEMU**, exact V5.01 stock image: package accepted (`Ret 515`), `Shell` marker survives
+  reboot, custom `user` gives root sessions and survives a full QEMU restart;
+- **real hardware**, spare camera on V5.01.R02: package accepted (`Ret 515`), automatic
+  reboot, three sequential root sessions (`Uid: 0`), no power-cycle;
+- V5.04/V5.07 add CRC/metadata checks and were **not** tested with a modified payload.
+
+Full write-up, package hashes, procedure and risks:
+[upgrade-root.md](upgrade-root.md). This should be reported to the vendor as a firmware
+integrity / privilege-escalation issue; do not expose port 2323 on a rooted camera.
+
 ## Practical exposure of a stock unit
 
 | Service | Port | Auth |

@@ -57,7 +57,7 @@ Re-tested on a stock unit with firmware `V5.01.R02.000A07F3.10010.346732.0000000
 | telnet 23 / 4321 / 9530 | **closed** |
 | vendor debug `/usr/bin/debug` | **12901 open**; RSA vendor handshake, not usable without the vendor private key |
 | DVRIP `OPTelnetControl` / `EnableKey` | **decoy**: any key accepted, no listener opened (see [telnet.md](telnet.md)) |
-| upgrade manifest | signed (`Mx8Q`), so the old unsigned telnet-opener upgrade is rejected |
+| upgrade manifest | **V5.01 accepts a modified/unsigned package**: a `Shell` command is executed as root and a custom `user` partition is flashed. This is the confirmed root path — see [upgrade-root.md](upgrade-root.md). The official V5.07 metadata checks are stricter and were not hardware-tested with a modified payload |
 
 This matches the class of **CVE-2026-79394** (RTSP default auth),
 **CVE-2026-79395** (ONVIF WSSE empty-password bypass),
@@ -98,3 +98,57 @@ Other cloud channels seen in config:
 - `NetWork.PMS.Enable=true` → `push.umeye.cn:80` (push/alarms).
 
 None of these are required for local RTSP/ONVIF/web; all are blocked by cutting WAN.
+
+## Legacy HTTP JSON bridge — admin auth bypass and file read (2026-11-18)
+
+On V5.01, the web server exposes a **legacy JSON bridge** below `/cgi-bin/`
+(`getinfo.cgi`, `getconfig.cgi`, `getability.cgi`, `getdefault.cgi`,
+`usermanager.cgi`, `getlog.cgi`, `opdev.cgi`). It parses `Name`, `UserName` and
+`Password` from a JSON body and dispatches an internal DVRIP operation **without**
+performing the RSA web login. With the factory state (`admin` has an empty password),
+`UserName=admin` plus **any/empty** `Password` returns `Ret 100` and full admin RPC:
+
+```http
+POST /cgi-bin/usermanager.cgi
+{"Name":"GetAllUser","UserName":"admin","Password":""}
+```
+
+Consequences observed on a stock unit:
+
+- `/cgi-bin/usermanager.cgi` returns all accounts **with plaintext `Password` fields**
+  (including the extra/hidden account — see above);
+- **`ConfigExport`** (`opdev.cgi`, `{"Name":"ConfigExport","DataType":"Config",...}`)
+  returns a base64 ZIP of `/mnt/mtd/Config`: accounts, network/DHCP/resolv, all
+  `Json/*` tables, logs, and **`wpa.conf` with the home Wi-Fi SSID and PSK in clear**;
+- DVRIP still accepts `admin`/empty for the same admin operations, and DVRIP messages
+  1482/1486/1488 can add/delete users and change the admin password.
+
+Treat this as a **credential/config disclosure** vulnerability. If you have run an
+affected camera on a network with real credentials, **rotate the Wi-Fi PSK and any
+reused admin password**, and do not expose port 80.
+
+### `ConfigImport` — root file write
+
+The write half of the same mechanism (`ConfigImport`, DVRIP msg 1540, raw ZIP body)
+extracts a ZIP into `/var/config_tmp` and then into `/mnt/mtd/Config`. ZIP entries with
+`../` escape the target directory and are written **as root** under `/mnt/mtd` (JFFS2,
+persistent). Demonstrated in QEMU with a marker file and a replaced `Config/Account1`.
+
+Do **not** send `ConfigImport` to a camera you cannot restore: entries such as
+`../../dev/mtd0` or `../../dev/mtdblock0` overwrite the boot partition and **brick**
+the unit (verified on a QEMU image: U-Boot no longer starts). This primitive is a
+root-write/DoS issue, not a shell by itself; it is documented here because it is part of
+the same unauthenticated admin surface.
+
+## Rooted camera: the 2323 shell
+
+The unsigned-upgrade root path ([upgrade-root.md](upgrade-root.md)) leaves an
+**unauthenticated root shell on TCP 2323**. That is a deliberate management backdoor
+while experimenting, not a production configuration:
+
+- never port-forward 2323; firewall it to a single management host;
+- keep the camera on an isolated VLAN/SSID;
+- after the experiment, restore the official `user` partition or replace the daemon with
+  an authenticated service;
+- also create `/mnt/mtd/Log/9530Disable` to keep the vendor debug service (12901) off at
+  boot.
