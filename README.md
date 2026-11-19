@@ -21,11 +21,15 @@ Notes for a no-name 2 MP PTZ camera built on the Xiongmai **XM535D1** SoC and th
 > [docs/upgrade-root.md](docs/upgrade-root.md). A verified full SPI dump is still mandatory
 > before flashing anything.
 >
-> **Production build:** one spare camera is now running a hardened production image —
-> SSH **key-only root on TCP 2222**, no unauthenticated shell, cloud/PMS/NAT/online
-> upgrade/NTP disabled, ONVIF/RTSP/snapshot password-protected. Details, build and
-> recovery: [docs/production-firmware.md](docs/production-firmware.md). The first camera
-> was left stock.
+> **Production builds:** a spare camera was used to validate both the **V5.01** and
+> **V5.07** production images on real hardware — SSH key-only root on TCP 2222, no
+> unauthenticated shell, cloud/PMS/NAT/online-upgrade/NTP disabled, ONVIF/RTSP/snapshot
+> password-protected. The V5.01 image went through a full hardware round-trip; the V5.07
+> image was applied, verified and rebooted on hardware, then the camera was downgraded to
+> stock V5.01 (hardened config preserved) after validation. Builds, tests and recovery:
+> [docs/production-firmware.md](docs/production-firmware.md) (V5.01) and
+> [docs/production-firmware-v507.md](docs/production-firmware-v507.md) (V5.07). The first
+> camera (`.153`) was left stock.
 
 ## Board
 

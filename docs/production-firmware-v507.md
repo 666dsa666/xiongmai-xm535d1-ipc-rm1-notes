@@ -1,8 +1,9 @@
 # Production firmware for V5.07 (SSH key-only root on 2222)
 
-> **Status: validated in QEMU only (2026-11-19).** No real V5.07 camera was available.
-> `.161` remains the validated V5.01 production camera; `.153` remains stock.
-> Take a verified SPI dump ×2 before flashing a real V5.07 unit.
+> **Status: validated in QEMU and on real hardware (2026-11-19).** A spare camera
+> (`.161`) was taken from stock V5.01 to V5.07 with this package, verified over SSH,
+> rebooted, then downgraded to V5.01 official. No SPI dump was available (risk accepted);
+> `.153` was not touched.
 
 This is the V5.07 version of [production-firmware.md](production-firmware.md): the latest
 vendor firmware, with an authenticated SSH root and no unauthenticated shell, cloud off
@@ -57,6 +58,27 @@ payloads are re-wrapped. See [upgrade-root-v507.md](upgrade-root-v507.md).
 | network/auth | RTSP empty **401**, hash/plain **200**; ONVIF media/device unauth **401**; snapshot unauth **401**; HTTP bridge wrong pw **203**; listeners only 2222 + 80/554/8899/34567/23000 |
 
 Images archived by the agent: `prod_v507_from_stock.img`, `prod_v507_from_v501root.img`.
+
+## Real-hardware validation (2026-11-19)
+
+The package was applied to the spare camera `.161` after it had been returned to stock
+V5.01:
+
+1. official V5.01 flash → `Ret 515`, stock V5.01, no SSH/2323;
+2. `v507_prod_ssh.bin` upload → **`Ret 515`**, reboot;
+3. DVRIP reports **`V5.07.X02.000A07F3.10010.346732.0000000`** (build 2025-09-06);
+4. **SSH root key-only on 2222 works** (`Uid: 0 0 0 0`, root home `/mnt/mtd`,
+   `/mnt/mtd/Log/9530Disable` present); 2323/12901/9530/23 closed;
+5. hardening persisted: admin only, PMS/NAT/OnlineUpgrade/NTP off,
+   `DisableXmServerConn` all true, `OnvifPwdCheckout` true;
+6. RTSP empty **401** / stored hash/plain **200**; ONVIF media+device unauth **401**;
+   `/webcapture.jpg` unauth **401**;
+7. `sync; reboot` via SSH → 2222/root still available (persistence);
+8. **downgrade `v501_official.bin`** → `Ret 515`, V5.01, SSH/2323 closed, hardened
+   config preserved.
+
+Only caveat: no SPI dump was available; the test relied on the official-package recovery
+path. A verified dump is still recommended before future flashes.
 
 ## Install method (real V5.07, after SPI dump)
 

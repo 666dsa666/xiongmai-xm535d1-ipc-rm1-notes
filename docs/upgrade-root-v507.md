@@ -1,8 +1,9 @@
 # Root on the latest V5.07 — unsigned upgrade still works
 
-> **Status: validated in QEMU only (2026-11-19).** No physical V5.07 camera was
-> available yet. The first camera (`.153`, V5.01) was not touched; the V5.01
-> production camera was not touched either. Take a verified SPI dump before any real test.
+> **Status: validated in QEMU and on real hardware (2026-11-19).** A spare camera was
+> taken V5.01 → V5.07 with a rooted V5.07 `user` package, verified over SSH, rebooted,
+> then downgraded to official V5.01. No SPI dump was available (risk accepted); `.153`
+> was not touched.
 
 ## The finding
 
